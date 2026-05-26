@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f7f4;
+  --foreground: #18181b;
 }
 
 @theme inline {
@@ -12,15 +12,66 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: #bbf7d0;
+  color: #18181b;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: -5;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .report-pages,
+  .report-pages * {
+    visibility: visible !important;
+  }
+
+  .report-pages {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  .report-pages article {
+    padding: 0mm !important;
+  }
+
+  .report-pages article {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .report-pages article:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
 }
