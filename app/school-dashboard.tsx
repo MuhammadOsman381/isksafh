@@ -19,6 +19,7 @@ import type {
   NewStudentForm,
   NewSubjectForm,
   NewUserForm,
+  NewYearForm,
   Role,
   SchoolData,
   Tab,
@@ -43,12 +44,31 @@ const roleRoutes: Record<Role, string> = {
   attendent: "/attendee",
 };
 
+const defaultTabs: Record<Role, Tab> = {
+  admin: "dashboard",
+  teacher: "students",
+  attendent: "dashboard",
+};
+
+function teacherCanSeeStudent(student: SchoolData["students"][number], data: SchoolData, teacherId: string) {
+  const teacherAssignments = data.teacherSubjects.filter((assignment) => assignment.teacherId === teacherId);
+  const studentSubjectIds = new Set(
+    data.studentSubjects
+      .filter((assignment) => assignment.studentId === student.id)
+      .map((assignment) => assignment.subjectId),
+  );
+
+  return teacherAssignments.some(
+    (assignment) => assignment.year === student.year && studentSubjectIds.has(assignment.subjectId),
+  );
+}
+
 export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role }) {
   const router = useRouter();
   const [data, setData] = useState<SchoolData>(initialData);
   const [role, setRole] = useState<Role | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [activeTab, setActiveTab] = useState<Tab>("students");
   const [loading, setLoading] = useState(true);
   const [checkingSession, setCheckingSession] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,13 +80,15 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     email: "",
     password: "",
     role: "teacher",
+    status: "active",
   });
   const [newStudent, setNewStudent] = useState<NewStudentForm>({
     studentId: "",
     name: "",
     year: "Year 7",
-    guardian: "",
+    status: "active",
   });
+  const [newYear, setNewYear] = useState<NewYearForm>({ name: "" });
   const [newSubject, setNewSubject] = useState<NewSubjectForm>({
     name: "",
     year: "Year 7",
@@ -75,9 +97,9 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     studentId: "",
     subjectId: "",
     teacherId: "",
-    percentage: "",
-    effort: "Good",
-    attainment: "Secure",
+    percentage: "90",
+    effort: "A",
+    attainment: "A",
   });
   const [newAttendance, setNewAttendance] = useState<NewAttendanceForm>({
     studentId: "",
@@ -111,6 +133,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
         if (session?.user) {
           setCurrentUser(session.user);
           setRole(session.user.role);
+          setActiveTab(defaultTabs[session.user.role]);
           if (!expectedRole) {
             router.replace(roleRoutes[session.user.role]);
           } else if (session.user.role !== expectedRole) {
@@ -143,21 +166,20 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
       Math.max(data.students.length, 1),
   );
 
-  const averageScore = Math.round(
-    data.reports.reduce((sum, report) => sum + report.percentage, 0) /
-      Math.max(data.reports.length, 1),
-  );
-
   const filteredStudents = useMemo(() => {
+    const baseStudents =
+      role === "teacher" && currentUser
+        ? data.students.filter((student) => teacherCanSeeStudent(student, data, currentUser.id))
+        : data.students;
     const normalized = query.toLowerCase().trim();
-    if (!normalized) return data.students;
-    return data.students.filter((student) =>
-      [student.name, student.studentId, student.year, student.guardian]
+    if (!normalized) return baseStudents;
+    return baseStudents.filter((student) =>
+      [student.name, student.studentId, student.year]
         .join(" ")
         .toLowerCase()
         .includes(normalized),
     );
-  }, [data.students, query]);
+  }, [currentUser, data, query, role]);
 
   async function mutate(action: string, payload: Record<string, unknown>) {
     setSaving(true);
@@ -166,10 +188,15 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, payload }),
     });
+    if (!response.ok) {
+      setNotice("Action failed");
+      setSaving(false);
+      return;
+    }
     const payloadData = (await response.json()) as SchoolData;
     setData(payloadData);
     setSaving(false);
-    setNotice(data.meta.source === "demo" ? "Demo mode preview updated" : "Saved to Neon");
+    setNotice(data.meta.source === "demo" ? "Demo mode preview updated" : "Saved to Supabase");
   }
 
   async function login(email: string, password: string) {
@@ -185,7 +212,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     const payload = (await response.json()) as { user: User };
     setCurrentUser(payload.user);
     setRole(payload.user.role);
-    setActiveTab("dashboard");
+    setActiveTab(defaultTabs[payload.user.role]);
     router.push(roleRoutes[payload.user.role]);
   }
 
@@ -200,13 +227,29 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
   function createUser(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void mutate("create-user", newUser);
-    setNewUser({ name: "", email: "", password: "", role: "teacher" });
+    setNewUser({ name: "", email: "", password: "", role: "teacher", status: "active" });
+  }
+
+  function updateUser(event: FormEvent<HTMLFormElement>, user: NewUserForm) {
+    event.preventDefault();
+    void mutate("update-user", user as unknown as Record<string, unknown>);
   }
 
   function createStudent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void mutate("create-student", newStudent);
-    setNewStudent({ studentId: "", name: "", year: newStudent.year, guardian: "" });
+    setNewStudent({ studentId: "", name: "", year: newStudent.year, status: "active" });
+  }
+
+  function updateStudent(event: FormEvent<HTMLFormElement>, student: NewStudentForm) {
+    event.preventDefault();
+    void mutate("update-student", student as unknown as Record<string, unknown>);
+  }
+
+  function createYear(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void mutate("create-year", newYear);
+    setNewYear({ name: "" });
   }
 
   function createSubject(event: FormEvent<HTMLFormElement>) {
@@ -222,9 +265,9 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
       studentId: "",
       subjectId: "",
       teacherId: "",
-      percentage: "",
-      effort: "Good",
-      attainment: "Secure",
+      percentage: "90",
+      effort: "A",
+      attainment: "A",
     });
   }
 
@@ -245,9 +288,13 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     void mutate("assign-subject", assignment);
   }
 
-  function assignStudentSubject(event: FormEvent<HTMLFormElement>) {
+  function updateTeacherAssignment(event: FormEvent<HTMLFormElement>, nextAssignment: AssignmentForm) {
     event.preventDefault();
-    void mutate("assign-student-subject", assignment);
+    void mutate("update-teacher-assignment", nextAssignment as unknown as Record<string, unknown>);
+  }
+
+  function deleteTeacherAssignment(id: string) {
+    void mutate("delete-teacher-assignment", { id });
   }
 
   if (!role) {
@@ -281,7 +328,6 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
         <DashboardView
           data={data}
           averageAttendance={averageAttendance}
-          averageScore={averageScore}
           teachers={teachers.length}
           attendants={attendants.length}
         />
@@ -296,6 +342,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
           newStudent={newStudent}
           setNewStudent={setNewStudent}
           createStudent={createStudent}
+          updateStudent={updateStudent}
           deleteStudent={(id) => void mutate("delete-student", { id })}
         />
       )}
@@ -305,6 +352,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
           newUser={newUser}
           setNewUser={setNewUser}
           createUser={createUser}
+          updateUser={updateUser}
           deleteUser={(id) => void mutate("delete-user", { id })}
         />
       )}
@@ -313,13 +361,17 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
           data={data}
           subjects={data.subjects}
           years={data.years}
+          newYear={newYear}
+          setNewYear={setNewYear}
+          createYear={createYear}
           assignment={assignment}
           setAssignment={setAssignment}
           newSubject={newSubject}
           setNewSubject={setNewSubject}
           createSubject={createSubject}
           assignTeacherSubject={assignTeacherSubject}
-          assignStudentSubject={assignStudentSubject}
+          updateTeacherAssignment={updateTeacherAssignment}
+          deleteTeacherAssignment={deleteTeacherAssignment}
           deleteSubject={(id) => void mutate("delete-subject", { id })}
         />
       )}

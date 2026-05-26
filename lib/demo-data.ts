@@ -4,8 +4,9 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  password: string;
   role: Role;
-  status: "active" | "paused";
+  status: "active" | "blocked";
 };
 
 export type Student = {
@@ -13,7 +14,6 @@ export type Student = {
   studentId: string;
   name: string;
   year: string;
-  guardian: string;
   attendance: number;
   status: "active" | "watch" | "inactive";
 };
@@ -68,7 +68,7 @@ export type SchoolData = {
   reports: Report[];
   attendance: AttendanceRecord[];
   meta: {
-    source: "demo" | "neon";
+    source: "demo" | "supabase";
     generatedAt: string;
   };
 };
@@ -79,6 +79,7 @@ export const demoData: SchoolData = {
       id: "u-admin",
       name: "Admin Office",
       email: "admin@isksafh.school",
+      password: "admin123",
       role: "admin",
       status: "active",
     },
@@ -86,6 +87,7 @@ export const demoData: SchoolData = {
       id: "u-teacher-1",
       name: "Ayesha Khan",
       email: "ayesha@isksafh.school",
+      password: "teacher123",
       role: "teacher",
       status: "active",
     },
@@ -93,6 +95,7 @@ export const demoData: SchoolData = {
       id: "u-teacher-2",
       name: "Omar Malik",
       email: "omar@isksafh.school",
+      password: "teacher123",
       role: "teacher",
       status: "active",
     },
@@ -100,6 +103,7 @@ export const demoData: SchoolData = {
       id: "u-attendent",
       name: "Attendance Desk",
       email: "attendance@isksafh.school",
+      password: "attend123",
       role: "attendent",
       status: "active",
     },
@@ -110,7 +114,6 @@ export const demoData: SchoolData = {
       studentId: "ISK-1001",
       name: "Hania Ahmed",
       year: "Year 7",
-      guardian: "Sara Ahmed",
       attendance: 96,
       status: "active",
     },
@@ -119,7 +122,6 @@ export const demoData: SchoolData = {
       studentId: "ISK-1002",
       name: "Zain Raza",
       year: "Year 8",
-      guardian: "Bilal Raza",
       attendance: 91,
       status: "active",
     },
@@ -128,7 +130,6 @@ export const demoData: SchoolData = {
       studentId: "ISK-1003",
       name: "Mariam Noor",
       year: "Year 9",
-      guardian: "Nadia Noor",
       attendance: 84,
       status: "watch",
     },
@@ -137,7 +138,6 @@ export const demoData: SchoolData = {
       studentId: "ISK-1004",
       name: "Ibrahim Shah",
       year: "Year 10",
-      guardian: "Farhan Shah",
       attendance: 98,
       status: "active",
     },
@@ -164,18 +164,8 @@ export const demoData: SchoolData = {
     },
   ],
   studentSubjects: [
-    {
-      id: "ss-1",
-      studentId: "s-1",
-      subjectId: "sub-english-7",
-      year: "Year 7",
-    },
-    {
-      id: "ss-2",
-      studentId: "s-2",
-      subjectId: "sub-maths-8",
-      year: "Year 8",
-    },
+    { id: "ss-1", studentId: "s-1", subjectId: "sub-english-7", year: "Year 7" },
+    { id: "ss-2", studentId: "s-2", subjectId: "sub-maths-8", year: "Year 8" },
   ],
   reports: [
     {

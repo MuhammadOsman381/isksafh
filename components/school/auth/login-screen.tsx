@@ -15,7 +15,7 @@ export function LoginScreen({
 }: {
   onLogin: (email: string, password: string) => Promise<void>;
   loading: boolean;
-  source: "demo" | "neon";
+  source: "demo" | "supabase";
   notice: string;
 }) {
   const [email, setEmail] = useState("admin@isksafh.school");
@@ -54,7 +54,7 @@ export function LoginScreen({
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-zinc-600">
             A clean school operations dashboard for administrators, teachers,
-            and attendance staff with Neon-ready storage and animated workflows.
+            and attendance staff with Supabase-ready storage and animated workflows.
           </p>
           <div className="mt-8 grid max-w-xl grid-cols-3 gap-3">
             <Metric label="Teachers" value="50" tone="emerald" />
@@ -75,7 +75,7 @@ export function LoginScreen({
                 <p className="text-sm text-zinc-400">Choose portal</p>
                 <h2 className="mt-1 text-2xl font-semibold">Sign in preview</h2>
               </div>
-              <StatusPill icon={Database} label={source === "neon" ? "Neon" : "Demo"} dark />
+              <StatusPill icon={Database} label={source === "supabase" ? "Supabase" : "Demo"} dark />
             </div>
             <form onSubmit={submitLogin} className="mt-6 grid gap-3">
               <TextInput label="Email" value={email} onChange={setEmail} required type="email" />

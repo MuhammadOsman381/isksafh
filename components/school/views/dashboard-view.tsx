@@ -1,19 +1,17 @@
 "use client";
 
-import { Activity, CalendarCheck, GraduationCap, Users } from "lucide-react";
-import { InsightCard, Panel, ProgressBar, ReportMini } from "../ui";
+import { CalendarCheck, GraduationCap, Users } from "lucide-react";
+import { InsightCard, Panel, ReportMini } from "../ui";
 import type { SchoolData } from "../types";
 
 export function DashboardView({
   data,
   averageAttendance,
-  averageScore,
   teachers,
   attendants,
 }: {
   data: SchoolData;
   averageAttendance: number;
-  averageScore: number;
   teachers: number;
   attendants: number;
 }) {
@@ -21,7 +19,7 @@ export function DashboardView({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <InsightCard icon={GraduationCap} label="Students" value={data.students.length} detail="Active learner profiles" tone="emerald" />
         <InsightCard icon={Users} label="Teachers" value={teachers} detail={`${attendants} attendance staff`} tone="indigo" />
         <InsightCard icon={CalendarCheck} label="Attendance" value={`${averageAttendance}%`} detail="Average student presence" tone="amber" />

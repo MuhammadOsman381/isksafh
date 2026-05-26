@@ -17,10 +17,10 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[1.5rem] border border-zinc-200 bg-white p-5 shadow-sm shadow-zinc-200/70">
+    <section className="rounded-2xl border border-zinc-200 bg-white/95 p-5 shadow-[0_18px_50px_rgba(24,24,27,0.06)]">
       <div className="mb-5">
         <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
-        <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>
+        <p className="mt-1 text-sm leading-6 text-zinc-500">{subtitle}</p>
       </div>
       {children}
     </section>
@@ -42,15 +42,16 @@ export function InsightCard({
 }) {
   return (
     <motion.div
-      whileHover={{ y: -3 }}
-      className="rounded-[1.5rem] border border-zinc-200 bg-white p-5 shadow-sm shadow-zinc-200/70"
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+      className="rounded-2xl border border-zinc-200 bg-white/95 p-5 shadow-[0_18px_50px_rgba(24,24,27,0.06)] transition-colors hover:border-zinc-300"
     >
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-zinc-500">{label}</p>
           <p className="mt-2 text-4xl font-semibold tracking-tight">{value}</p>
         </div>
-        <div className={`flex size-11 items-center justify-center rounded-2xl ${toneClass(tone)}`}>
+        <div className={`flex size-11 items-center justify-center rounded-xl ${toneClass(tone)}`}>
           <Icon size={21} />
         </div>
       </div>
@@ -61,7 +62,7 @@ export function InsightCard({
 
 export function Metric({ label, value, tone }: { label: string; value: string; tone: Tone }) {
   return (
-    <div className={`rounded-2xl border p-4 ${toneClass(tone)}`}>
+    <div className={`rounded-xl border p-4 ${toneClass(tone)}`}>
       <p className="text-3xl font-semibold">{value}</p>
       <p className="mt-1 text-sm">{label}</p>
     </div>
@@ -78,7 +79,7 @@ export function DataTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[680px] text-left text-sm">
-        <thead className="bg-zinc-50 text-xs uppercase tracking-[0.14em] text-zinc-500">
+        <thead className="bg-[var(--surface-muted)] text-xs uppercase tracking-[0.14em] text-zinc-500">
           <tr>
             {headers.map((header) => (
               <th key={header} className="px-4 py-3 font-semibold">
@@ -90,7 +91,7 @@ export function DataTable({
         <tbody className="divide-y divide-zinc-200">
           {rows.length ? (
             rows.map((row, index) => (
-              <tr key={index} className="bg-white">
+              <tr key={index} className="bg-white transition hover:bg-zinc-50/80">
                 {row.map((cell, cellIndex) => (
                   <td key={cellIndex} className="px-4 py-3 align-middle text-zinc-700">
                     {cell}
@@ -138,7 +139,7 @@ export function TextInput({
         required={required}
         min={min}
         max={max}
-        className="h-11 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-950 outline-none transition focus:border-zinc-950 focus:bg-white"
+        className="h-11 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-950 outline-none transition focus:border-[var(--brand)] focus:bg-white focus:shadow-[0_0_0_3px_rgba(15,118,110,0.12)]"
       />
     </label>
   );
@@ -166,7 +167,7 @@ export function SelectInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
-        className="h-11 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-950 outline-none transition focus:border-zinc-950 focus:bg-white"
+        className="h-11 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-950 outline-none transition focus:border-[var(--brand)] focus:bg-white focus:shadow-[0_0_0_3px_rgba(15,118,110,0.12)]"
       >
         <option value="" disabled>
           Select {label.toLowerCase()}
@@ -183,7 +184,7 @@ export function SelectInput({
 
 export function PrimaryButton({ label }: { label: string }) {
   return (
-    <button className="mt-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800">
+    <button className="mt-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(24,24,27,0.18)] transition hover:-translate-y-0.5 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">
       <Plus size={17} />
       {label}
     </button>
@@ -197,7 +198,7 @@ export function IconButton({ label, onClick }: { label: string; onClick: () => v
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="inline-flex size-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100"
+      className="inline-flex size-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100"
     >
       <Trash2 size={16} />
     </button>
@@ -214,7 +215,7 @@ export function SearchBox({
   placeholder: string;
 }) {
   return (
-    <label className="flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-500 focus-within:border-zinc-950 focus-within:bg-white">
+    <label className="flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-500 transition focus-within:border-[var(--brand)] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(15,118,110,0.12)]">
       <Search size={17} />
       <input
         value={value}
@@ -255,7 +256,7 @@ export function StatusPill({
   spin?: boolean;
 }) {
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium ${dark ? "bg-white/10 text-white" : "border border-zinc-200 bg-white text-zinc-700"}`}>
+    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium ${dark ? "bg-white/10 text-white" : "border border-zinc-200 bg-white/90 text-zinc-700 shadow-sm"}`}>
       <Icon size={16} className={spin ? "animate-spin" : ""} />
       {label}
     </span>
@@ -290,7 +291,7 @@ export function ReportMini({
   const teacher = data.users.find((item) => item.id === report.teacherId);
 
   return (
-    <div className={`rounded-2xl border border-zinc-200 ${compact ? "p-3" : "p-4"}`}>
+    <div className={`rounded-xl border border-zinc-200 bg-white/80 ${compact ? "p-3" : "p-4"}`}>
       <div className="flex items-start justify-between gap-4">
         <PersonCell
           title={`${subject?.name ?? "Subject"} · ${report.percentage}%`}
@@ -309,11 +310,11 @@ export function ReportMini({
 
 export function AssignmentList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
       <p className="font-semibold text-zinc-950">{title}</p>
       <div className="mt-3 space-y-2">
         {items.length ? items.map((item) => (
-          <p key={item} className="rounded-xl bg-white px-3 py-2 text-sm text-zinc-600">
+          <p key={item} className="rounded-lg bg-white px-3 py-2 text-sm text-zinc-600">
             {item}
           </p>
         )) : (
@@ -326,10 +327,15 @@ export function AssignmentList({ title, items }: { title: string; items: string[
 
 export function LoadingState() {
   return (
-    <div className="flex min-h-[420px] items-center justify-center rounded-[1.5rem] border border-zinc-200 bg-white">
-      <div className="text-center">
-        <Loader2 className="mx-auto animate-spin text-zinc-500" size={32} />
-        <p className="mt-3 text-sm font-medium text-zinc-500">Loading school workspace</p>
+    <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white/95">
+      <div className="w-full max-w-sm space-y-3 p-6">
+        <div className="mx-auto mb-5 flex size-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500">
+          <Loader2 className="animate-spin" size={21} />
+        </div>
+        <div className="h-3 rounded-full bg-zinc-100" />
+        <div className="h-3 w-4/5 rounded-full bg-zinc-100" />
+        <div className="h-3 w-2/3 rounded-full bg-zinc-100" />
+        <p className="pt-2 text-center text-sm font-medium text-zinc-500">Loading school workspace</p>
       </div>
     </div>
   );

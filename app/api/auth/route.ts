@@ -1,7 +1,7 @@
 import { SignJWT } from "jose";
 import { jwtVerify } from "jose";
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateUser, getUserById } from "@/lib/neon";
+import { authenticateUser, getUserById } from "@/lib/supabase-db";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "local-school-secret");
 

@@ -30,6 +30,7 @@ export const roleCopy: Record<Role, string> = {
 
 export const effortOptions = ["Excellent", "Good", "Satisfactory", "Needs Support"];
 export const attainmentOptions = ["Mastered", "Secure", "Developing", "Emerging"];
+export const gradeOptions = ["A", "B", "C", "D"];
 
 export function pageTitle(tab: Tab) {
   const titles: Record<Tab, string> = {

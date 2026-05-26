@@ -11,22 +11,29 @@ export type Tab =
   | "reports";
 
 export type NewUserForm = {
+  id?: string;
   name: string;
   email: string;
   password: string;
   role: Role;
+  status: "active" | "blocked";
 };
 
 export type NewStudentForm = {
+  id?: string;
   studentId: string;
   name: string;
   year: string;
-  guardian: string;
+  status: "active" | "watch" | "inactive";
 };
 
 export type NewSubjectForm = {
   name: string;
   year: string;
+};
+
+export type NewYearForm = {
+  name: string;
 };
 
 export type NewReportForm = {
@@ -47,6 +54,7 @@ export type NewAttendanceForm = {
 };
 
 export type AssignmentForm = {
+  id?: string;
   teacherId: string;
   studentId: string;
   subjectId: string;

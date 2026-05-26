@@ -16,7 +16,7 @@ export function AttendanceView({
   createAttendance: FormHandler;
 }) {
   return (
-    <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
+    <div className="flex flex-col gap-6">
       <Panel title="Record Attendance" subtitle="Daily register for authorised and unauthorised absence">
         <form onSubmit={createAttendance} className="grid gap-3">
           <SelectInput label="Student" value={newAttendance.studentId} options={data.students.map((student) => option(student.id, `${student.name} · ${student.studentId}`))} onChange={(value) => setNewAttendance({ ...newAttendance, studentId: value })} />

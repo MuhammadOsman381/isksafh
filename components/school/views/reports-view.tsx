@@ -13,8 +13,7 @@ type ReportStudent = {
   subjects: Array<{
     subject: string;
     percentage: string | number;
-    effort: string;
-    attainment: string;
+    grade: string;
     teacher: string;
   }>;
   attendance: {
@@ -119,7 +118,7 @@ function ReportCards({
   return (
     <div className="w-auto space-y-8 p-3 print:space-y-0">
       {students.map((student) => (
-        <article key={student.id} className="p-4 print:p-[3mm] print:[break-after:page]">
+        <article key={student.id} className="p-4   print:p-[3mm] print:[break-after:page]">
           <div className="mx-auto min-h-[290mm] max-w-[210mm] border-[5px] border-black bg-white p-5 text-black shadow-sm print:shadow-none">
             <ReportHeader />
 
@@ -153,8 +152,7 @@ function ReportCards({
                   <tr>
                     <th className="border border-black p-2">Subjects</th>
                     <th className="border border-black p-2">Percentage (%)</th>
-                    <th className="border border-black p-2">Level for Effort</th>
-                    <th className="border border-black p-2">Level for Attainment</th>
+                    <th className="border border-black p-2">Grade</th>
                     <th className="border border-black p-2">Teachers</th>
                   </tr>
                 </thead>
@@ -164,14 +162,13 @@ function ReportCards({
                       <tr key={`${student.id}-${row.subject}-${row.teacher}`}>
                         <td className="border border-black p-1 text-left">{row.subject}</td>
                         <td className="border border-black p-1">{row.percentage}</td>
-                        <td className="border border-black p-1">{row.effort}</td>
-                        <td className="border border-black p-1">{row.attainment}</td>
+                        <td className="border border-black p-1">{row.grade}</td>
                         <td className="border border-black p-1 text-left">{row.teacher}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="border border-black p-2 text-center" colSpan={5}>
+                      <td className="border border-black p-2 text-center" colSpan={4}>
                         No subjects assigned.
                       </td>
                     </tr>
@@ -180,7 +177,6 @@ function ReportCards({
               </table>
             </section>
 
-            <RatingKey />
             <AttendanceTable attendance={student.attendance} />
             <Signatures />
           </div>
@@ -210,56 +206,6 @@ function ReportHeader() {
         </p>
       </div>
     </header>
-  );
-}
-
-function RatingKey() {
-  return (
-    <section className="mb-2">
-      <h3 className="mb-1 text-center text-[15px] font-bold">
-        <i>Rating Key</i>
-      </h3>
-      <div className="flex flex-col gap-0">
-        <table className="w-full border-collapse border border-black text-center text-sm">
-          <tbody>
-            <tr>
-              <td className="w-[16%] border border-black p-1 font-bold">Attainment</td>
-              <td className="border border-black p-1">
-                <span className="font-bold">a-</span>Outstanding
-              </td>
-              <td className="border border-black p-1">
-                <span className="font-bold">b-</span>Good
-              </td>
-              <td className="border border-black p-1">
-                <span className="font-bold">c-</span>Satisfactory
-              </td>
-              <td className="border border-black p-1">
-                <span className="font-bold">d-</span>Unsatisfactory
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <table className="w-full border-collapse border border-black text-center text-sm">
-          <tbody>
-            <tr>
-              <td className="w-[16%] border border-black p-1 font-bold">Effort</td>
-              <td className="border border-black p-1">
-                <span className="font-bold">1-</span>Outstanding
-              </td>
-              <td className="border border-black p-1">
-                <span className="font-bold">2-</span>Good
-              </td>
-              <td className="border border-black p-1">
-                <span className="font-bold">3-</span>Satisfactory
-              </td>
-              <td className="border border-black p-1">
-                <span className="font-bold">4-</span>Unsatisfactory
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
   );
 }
 
@@ -301,13 +247,13 @@ function Signatures() {
     <>
       <section className="mt-5 flex flex-row items-center justify-between">
         <div className="mt-5 text-center">
-          <div className="mx-auto w-[220px] border-t border-black" />
-          <p className="font-bold">Mohammad IJAZ</p>
-          <p>Head of Secondary & Higher Secondary</p>
+          <div className="mx-auto w-[250px] border-t border-black" />
+          <p className="font-bold">Dr. Khaled Khader Abudhaim</p>
+          <p>Director General</p>
         </div>
         <div className="mt-5 text-center">
           <div className="mx-auto w-[220px] border-t border-black" />
-          <p className="font-bold">Geoffrey FROUD</p>
+          <p className="font-bold">Dr. Areej Faraj Al Atawi</p>
           <p>School Principal</p>
         </div>
       </section>
@@ -322,15 +268,26 @@ function Signatures() {
 function buildReportStudents(data: SchoolData): ReportStudent[] {
   return data.students.map((student) => {
     const assignedSubjects = data.studentSubjects
-      .filter((item) => item.studentId === student.id)
-      .map((item) => data.subjects.find((subject) => subject.id === item.subjectId))
+      .filter((assignment) => assignment.studentId === student.id)
+      .map((assignment) => data.subjects.find((subject) => subject.id === assignment.subjectId))
       .filter(Boolean) as SchoolData["subjects"];
-
-    const fallbackSubjects = assignedSubjects.length
+    const yearSubjectIds = new Set(
+      data.teacherSubjects
+        .filter((assignment) => assignment.year === student.year)
+        .map((assignment) => assignment.subjectId),
+    );
+    const yearSubjects = data.subjects.filter((subject) => yearSubjectIds.has(subject.id));
+    const reportSubjects = data.reports
+      .filter((report) => report.studentId === student.id)
+      .map((report) => data.subjects.find((subject) => subject.id === report.subjectId))
+      .filter(Boolean) as SchoolData["subjects"];
+    const subjectsForReport = assignedSubjects.length
       ? assignedSubjects
-      : data.subjects.filter((subject) => subject.year === student.year);
+      : yearSubjects.length
+        ? yearSubjects
+        : reportSubjects;
 
-    const subjects = fallbackSubjects.map((subject) => {
+    const subjects = subjectsForReport.map((subject) => {
       const report = data.reports.find(
         (item) => item.studentId === student.id && item.subjectId === subject.id,
       );
@@ -341,8 +298,7 @@ function buildReportStudents(data: SchoolData): ReportStudent[] {
       return {
         subject: subject.name,
         percentage: report?.percentage ?? "-",
-        effort: report?.effort ?? "-",
-        attainment: report?.attainment ?? "-",
+        grade: report?.attainment ?? "-",
         teacher: teacher?.name ?? "-",
       };
     });
