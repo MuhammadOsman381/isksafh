@@ -37,12 +37,13 @@ textarea {
 @media print {
   @page {
     size: A4;
-    margin: 3mm 4mm 4mm 3mm;
+    margin: 4mm 4mm 4mm 2mm;
   }
 
   html,
   body {
     background: #ffffff !important;
+     margin: 0;
   }
 
   body * {

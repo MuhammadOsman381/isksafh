@@ -6,6 +6,7 @@ import { useState } from "react";
 import { pageTitle, tabs } from "../constants";
 import { LoadingState, StatusPill } from "../ui";
 import type { Role, Tab, User } from "../types";
+import Image from "next/image";
 
 export function SchoolShell({
   role,
@@ -51,8 +52,8 @@ export function SchoolShell({
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           <div className="text-center">
-            <p className="text-xs font-medium text-zinc-500">ISKS AFH</p>
-            <p className="text-sm font-semibold text-zinc-950">School OS</p>
+            <p className="text-xs font-medium text-zinc-500">ISKSAFH</p>
+            {/* <p className="text-sm font-semibold text-zinc-950">School OS</p> */}
           </div>
           <button
             onClick={onLogout}
@@ -73,18 +74,21 @@ export function SchoolShell({
         ) : null}
 
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-zinc-800 bg-zinc-950 px-5 py-5 text-white shadow-[24px_0_70px_rgba(24,24,27,0.24)] transition-transform duration-300 lg:z-40 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-zinc-800 bg-zinc-950 px-5 py-5 text-white shadow-[24px_0_70px_rgba(24,24,27,0.24)] transition-transform duration-300 lg:z-40 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-400 text-zinc-950 shadow-[0_10px_28px_rgba(52,211,153,0.22)]">
-                <GraduationCap size={24} />
+              <div className="flex size-11 items-center justify-center rounded-xl  shadow">
+                {/* <GraduationCap size={24} />
+                 */}
+                <Image
+                  src="/logo.jpeg"
+                  alt="Logo" width={55} height={55} className="rounded-full" />
               </div>
               <div>
-                <p className="text-sm text-zinc-400">ISKS AFH</p>
-                <h1 className="text-lg font-semibold">School OS</h1>
+                <h1 className=" font-semibold text-lg">ISKSAFH</h1>
+                {/* <h1 className="text-lg font-semibold">School OS</h1> */}
               </div>
             </div>
 
@@ -114,11 +118,10 @@ export function SchoolShell({
                     setActiveTab(tab.id);
                     if (window.innerWidth < 1024) setSidebarOpen(false);
                   }}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition ${
-                    activeTab === tab.id
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition ${activeTab === tab.id
                       ? "bg-white text-zinc-950 shadow-sm"
                       : "text-zinc-400 hover:bg-white/10 hover:text-white"
-                  }`}
+                    }`}
                 >
                   <Icon size={18} />
                   {tab.label}

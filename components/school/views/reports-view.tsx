@@ -209,7 +209,7 @@ function ReportHeader() {
   return (
     <header className="flex items-center justify-start gap-3 p-0">
       <div className="flex w-[95px] shrink-0 items-center justify-center">
-        <Image src="/school-logo.jpeg" alt="School Logo" width={95} height={95} className="h-auto w-full" />
+        <Image src="/school-logo.jpeg" alt="School Logo" width={95} height={95} className="h-auto w-full " />
       </div>
       <div className="flex-1 text-center">
         <h1 className="text-xl font-bold">
