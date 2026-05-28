@@ -26,10 +26,20 @@ export function StudentsView({
   newStudent: NewStudentForm;
   setNewStudent: (form: NewStudentForm) => void;
   createStudent: FormHandler;
-  updateStudent: (event: React.FormEvent<HTMLFormElement>, student: NewStudentForm) => void;
+  updateStudent: (event: React.FormEvent<HTMLFormElement>, student: NewStudentForm) => Promise<boolean>;
   deleteStudent: (id: string) => void;
 }) {
   const [editing, setEditing] = useState<NewStudentForm | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  async function handleUpdateStudent(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editing) return;
+    setSavingEdit(true);
+    const saved = await updateStudent(event, editing);
+    setSavingEdit(false);
+    if (saved) setEditing(null);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,13 +55,13 @@ export function StudentsView({
           </Panel>
           {editing ? (
             <Panel title="Edit Student" subtitle="Update student details">
-              <form onSubmit={(event) => updateStudent(event, editing)} className="grid gap-3">
+              <form onSubmit={handleUpdateStudent} className="grid gap-3">
                 <TextInput label="Student ID" value={editing.studentId} onChange={(value) => setEditing({ ...editing, studentId: value })} required />
                 <TextInput label="Full name" value={editing.name} onChange={(value) => setEditing({ ...editing, name: value })} required />
                 <SelectInput label="Year" value={editing.year} options={ensureYears(years)} onChange={(value) => setEditing({ ...editing, year: value })} />
                 <SelectInput label="Status" value={editing.status} options={["active", "watch", "inactive"]} onChange={(value) => setEditing({ ...editing, status: value as NewStudentForm["status"] })} />
                 <div className="grid gap-2 md:grid-cols-2">
-                  <PrimaryButton label="Save student" />
+                  <PrimaryButton label={savingEdit ? "Saving..." : "Save student"} disabled={savingEdit} />
                   <button type="button" onClick={() => setEditing(null)} className="mt-2 h-11 rounded-xl border border-zinc-200 text-sm font-semibold text-zinc-700">
                     Cancel
                   </button>

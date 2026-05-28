@@ -182,10 +182,10 @@ export function SelectInput({
   );
 }
 
-export function PrimaryButton({ label }: { label: string }) {
+export function PrimaryButton({ label, disabled }: { label: string; disabled?: boolean }) {
   return (
-    <button className="mt-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(24,24,27,0.18)] transition hover:-translate-y-0.5 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">
-      <Plus size={17} />
+    <button disabled={disabled} className="mt-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(24,24,27,0.18)] transition hover:-translate-y-0.5 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">
+      {disabled ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />}
       {label}
     </button>
   );

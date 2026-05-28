@@ -64,7 +64,7 @@ function loadDashboardBootstrap() {
     fetch("/api/system", { cache: "no-store" }).then(
       (response) => response.json() as Promise<SchoolData>,
     ),
-    fetch("/api/auth", { cache: "no-store" }).then(async (response) => {
+    fetch("/api/auth", { cache: "no-store", credentials: "same-origin" }).then(async (response) => {
       if (!response.ok) return null;
       return (await response.json()) as { user: User | null };
     }),
@@ -205,25 +205,36 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
 
   async function mutate(action: string, payload: Record<string, unknown>) {
     setSaving(true);
-    const response = await fetch("/api/system", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, payload }),
-    });
-    if (!response.ok) {
-      setNotice("Action failed");
+    try {
+      const response = await fetch("/api/system", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, payload }),
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => null) as { error?: string; detail?: string } | null;
+        setNotice(errorPayload?.detail ?? errorPayload?.error ?? "Action failed");
+        return false;
+      }
+
+      const payloadData = (await response.json()) as SchoolData;
+      setData(payloadData);
+      setNotice(payloadData.meta.source === "demo" ? "Demo mode preview updated" : "Saved to Supabase");
+      return true;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Action failed");
+      return false;
+    } finally {
       setSaving(false);
-      return;
     }
-    const payloadData = (await response.json()) as SchoolData;
-    setData(payloadData);
-    setSaving(false);
-    setNotice(data.meta.source === "demo" ? "Demo mode preview updated" : "Saved to Supabase");
   }
 
   async function login(email: string, password: string) {
     const response = await fetch("/api/auth", {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
@@ -240,7 +251,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
   }
 
   async function logout() {
-    await fetch("/api/auth", { method: "DELETE" });
+    await fetch("/api/auth", { method: "DELETE", credentials: "same-origin" });
     dashboardBootstrapPromise = null;
     setRole(null);
     setCurrentUser(null);
@@ -265,9 +276,9 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     setNewStudent({ studentId: "", name: "", year: newStudent.year, status: "active" });
   }
 
-  function updateStudent(event: FormEvent<HTMLFormElement>, student: NewStudentForm) {
+  async function updateStudent(event: FormEvent<HTMLFormElement>, student: NewStudentForm) {
     event.preventDefault();
-    void mutate("update-student", student as unknown as Record<string, unknown>);
+    return mutate("update-student", student as unknown as Record<string, unknown>);
   }
 
   function createYear(event: FormEvent<HTMLFormElement>) {

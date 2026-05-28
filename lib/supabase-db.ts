@@ -239,14 +239,44 @@ export async function mutateSchoolData(
   }
 
   if (action === "update-student") {
-    await db.update(students)
+    const studentId = String(payload.id ?? "");
+    const nextStudentId = String(payload.studentId ?? "").trim();
+    const nextName = String(payload.name ?? "").trim();
+    const nextYear = String(payload.year ?? "").trim();
+    if (!studentId || !nextStudentId || !nextName || !nextYear) {
+      throw new Error("Student ID, name, and year are required");
+    }
+
+    const [existingStudent] = await db.select().from(students).where(eq(students.id, studentId)).limit(1);
+    if (!existingStudent) throw new Error("Student does not exist");
+
+    const updated = await db.update(students)
       .set({
-        studentId: String(payload.studentId ?? ""),
-        name: String(payload.name ?? ""),
-        year: String(payload.year ?? ""),
+        studentId: nextStudentId,
+        name: nextName,
+        year: nextYear,
         status: normalizeStudentStatus(payload.status),
       })
-      .where(eq(students.id, String(payload.id)));
+      .where(eq(students.id, studentId))
+      .returning({ id: students.id });
+
+    if (updated.length === 0) throw new Error("Student update failed");
+
+    if (existingStudent.year !== nextYear) {
+      await db.delete(studentSubjects).where(eq(studentSubjects.studentId, studentId));
+      const yearAssignments = await db.select().from(teacherSubjects).where(eq(teacherSubjects.year, nextYear));
+      const subjectIds = Array.from(new Set(yearAssignments.map((assignment) => assignment.subjectId)));
+      if (subjectIds.length > 0) {
+        await db.insert(studentSubjects).values(
+          subjectIds.map((subjectId) => ({
+            id: crypto.randomUUID(),
+            studentId,
+            subjectId,
+            year: nextYear,
+          })),
+        ).onConflictDoNothing();
+      }
+    }
   }
 
   if (action === "delete-student") {
@@ -480,17 +510,38 @@ function mutateDemoData(action: string, payload: Record<string, unknown>, sessio
     }
   }
   if (action === "update-student") {
+    const nextYear = String(payload.year ?? "").trim();
+    const previousStudent = demoStore.data.students.find((student) => student.id === payload.id);
     demoStore.data.students = demoStore.data.students.map((student) =>
       student.id === payload.id
         ? {
             ...student,
             studentId: String(payload.studentId ?? student.studentId),
             name: String(payload.name ?? student.name),
-            year: String(payload.year ?? student.year),
+            year: nextYear || student.year,
             status: normalizeStudentStatus(payload.status),
           }
         : student,
     );
+    const updatedStudent = demoStore.data.students.find((student) => student.id === payload.id);
+    if (updatedStudent && previousStudent && nextYear && previousStudent.year !== nextYear) {
+      demoStore.data.studentSubjects = demoStore.data.studentSubjects.filter((item) => item.studentId !== updatedStudent.id);
+      const subjectIds = Array.from(
+        new Set(
+          demoStore.data.teacherSubjects
+            .filter((assignment) => assignment.year === nextYear)
+            .map((assignment) => assignment.subjectId),
+        ),
+      );
+      for (const subjectId of subjectIds) {
+        demoStore.data.studentSubjects.unshift({
+          id: crypto.randomUUID(),
+          studentId: updatedStudent.id,
+          subjectId,
+          year: nextYear,
+        });
+      }
+    }
   }
   if (action === "delete-student") {
     demoStore.data.students = demoStore.data.students.filter((student) => student.id !== payload.id);

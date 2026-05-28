@@ -18,28 +18,14 @@ export function LoginScreen({
   source: "demo" | "supabase";
   notice: string;
 }) {
-  const [email, setEmail] = useState("admin@isksafh.school");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void onLogin(email, password);
   }
 
-  function fillDemoCredentials(role: Role) {
-    if (role === "admin") {
-      setEmail("admin@isksafh.school");
-      setPassword("admin123");
-    }
-    if (role === "teacher") {
-      setEmail("ayesha@isksafh.school");
-      setPassword("teacher123");
-    }
-    if (role === "attendent") {
-      setEmail("attendance@isksafh.school");
-      setPassword("attend123");
-    }
-  }
 
   return (
     <main className="min-h-screen bg-[#f7f7f4] text-zinc-950">
@@ -50,7 +36,7 @@ export function LoginScreen({
             Premium Next.js rebuild
           </div>
           <h1 className="mt-6 max-w-2xl text-5xl font-semibold tracking-tight md:text-7xl">
-            ISKS AFH Student Management System
+            ISKSAFH Student Management System
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-zinc-600">
             A clean school operations dashboard for administrators, teachers,
@@ -91,7 +77,6 @@ export function LoginScreen({
                 <button
                   key={item}
                   disabled={loading}
-                  onClick={() => fillDemoCredentials(item)}
                   className="group flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.06] p-4 text-left transition hover:bg-white hover:text-zinc-950 disabled:cursor-wait disabled:opacity-70"
                 >
                   <div className="flex min-w-0 items-center gap-4">
