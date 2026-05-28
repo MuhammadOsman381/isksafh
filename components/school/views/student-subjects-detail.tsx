@@ -21,6 +21,36 @@ const initialData: SchoolData = {
   meta: { source: "demo", generatedAt: new Date().toISOString() },
 };
 
+let studentSubjectsBootstrapPromise:
+  | Promise<{
+      schoolData: SchoolData;
+      session: { user: User | null } | null;
+    }>
+  | null = null;
+
+function loadStudentSubjectsBootstrap() {
+  if (studentSubjectsBootstrapPromise) return studentSubjectsBootstrapPromise;
+
+  const promise = Promise.all([
+    fetch("/api/system", { cache: "no-store" }).then(
+      (response) => response.json() as Promise<SchoolData>,
+    ),
+    fetch("/api/auth", { cache: "no-store" }).then(async (response) => {
+      if (!response.ok) return null;
+      return (await response.json()) as { user: User | null };
+    }),
+  ]).then(([schoolData, session]) => ({ schoolData, session }));
+
+  studentSubjectsBootstrapPromise = promise;
+  promise.finally(() => {
+    window.setTimeout(() => {
+      if (studentSubjectsBootstrapPromise === promise) studentSubjectsBootstrapPromise = null;
+    }, 1000);
+  });
+
+  return promise;
+}
+
 type StudentSubjectForm = {
   id?: string;
   studentId: string;
@@ -45,16 +75,8 @@ export function StudentSubjectsDetail({ studentId }: { studentId: string }) {
   useEffect(() => {
     let active = true;
 
-    Promise.all([
-      fetch("/api/system", { cache: "no-store" }).then(
-        (response) => response.json() as Promise<SchoolData>,
-      ),
-      fetch("/api/auth", { cache: "no-store" }).then(async (response) => {
-        if (!response.ok) return null;
-        return (await response.json()) as { user: User | null };
-      }),
-    ])
-      .then(([schoolData, session]) => {
+    loadStudentSubjectsBootstrap()
+      .then(({ schoolData, session }) => {
         if (!active) return;
         setData(schoolData);
         const loadedStudent = schoolData.students.find((item) => item.id === studentId);

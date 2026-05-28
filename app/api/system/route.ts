@@ -5,6 +5,8 @@ import type { Role } from "@/lib/demo-data";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "local-school-secret");
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const data = await getSchoolData();

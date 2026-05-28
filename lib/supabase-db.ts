@@ -8,8 +8,37 @@ const databaseUrl = process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_UR
 
 export const hasDatabase = Boolean(databaseUrl);
 
-const client = databaseUrl ? postgres(databaseUrl, { prepare: false }) : null;
-const db = client ? drizzle(client) : null;
+type DatabaseClient = postgres.Sql<Record<string, never>>;
+type Database = ReturnType<typeof drizzle>;
+type GlobalWithDatabase = typeof globalThis & {
+  __schoolPostgresClient?: DatabaseClient;
+  __schoolDrizzleDb?: Database;
+};
+
+const globalForDatabase = globalThis as GlobalWithDatabase;
+
+function createClient() {
+  if (!databaseUrl) return null;
+  return postgres(databaseUrl, {
+    prepare: false,
+    max: process.env.NODE_ENV === "production" ? 10 : 3,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
+}
+
+const client =
+  databaseUrl
+    ? globalForDatabase.__schoolPostgresClient ?? createClient()
+    : null;
+const db = client
+  ? globalForDatabase.__schoolDrizzleDb ?? drizzle(client)
+  : null;
+
+if (process.env.NODE_ENV !== "production" && client && db) {
+  globalForDatabase.__schoolPostgresClient = client;
+  globalForDatabase.__schoolDrizzleDb = db;
+}
 
 const demoStore = {
   data: structuredClone(demoData) as SchoolData,
@@ -17,125 +46,21 @@ const demoStore = {
 
 type SessionUser = Pick<User, "id" | "role"> | null;
 
-export async function ensureSchema() {
-  if (!client || !db) return;
-
-  await client`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL DEFAULT 'school123',
-      role TEXT NOT NULL CHECK (role IN ('admin', 'teacher', 'attendent')),
-      status TEXT NOT NULL DEFAULT 'active',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT NOT NULL DEFAULT 'school123'`;
-  await client`
-    UPDATE users
-    SET password = CASE
-      WHEN role = 'admin' THEN 'admin123'
-      WHEN role = 'attendent' THEN 'attend123'
-      ELSE 'teacher123'
-    END
-    WHERE password IS NULL OR password = '' OR password = 'school123'
-  `;
-
-  await client`
-    CREATE TABLE IF NOT EXISTS academic_years (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-
-  await client`
-    CREATE TABLE IF NOT EXISTS students (
-      id TEXT PRIMARY KEY,
-      student_id TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      year TEXT NOT NULL,
-      attendance INTEGER NOT NULL DEFAULT 100,
-      status TEXT NOT NULL DEFAULT 'active',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-  await client`ALTER TABLE students DROP COLUMN IF EXISTS guardian`;
-
-  await client`
-    CREATE TABLE IF NOT EXISTS subjects (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      year TEXT NOT NULL DEFAULT '',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-  await client`ALTER TABLE subjects ALTER COLUMN year SET DEFAULT ''`;
-
-  await client`
-    CREATE TABLE IF NOT EXISTS teacher_subjects (
-      id TEXT PRIMARY KEY,
-      teacher_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-      year TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(teacher_id, subject_id)
-    )
-  `;
-
-  await client`
-    CREATE TABLE IF NOT EXISTS student_subjects (
-      id TEXT PRIMARY KEY,
-      student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-      subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-      year TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(student_id, subject_id)
-    )
-  `;
-
-  await client`
-    CREATE TABLE IF NOT EXISTS reports (
-      id TEXT PRIMARY KEY,
-      student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-      subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-      teacher_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      percentage INTEGER NOT NULL,
-      effort TEXT NOT NULL,
-      attainment TEXT NOT NULL,
-      note TEXT NOT NULL DEFAULT '',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-
-  await client`
-    CREATE TABLE IF NOT EXISTS attendance (
-      id TEXT PRIMARY KEY,
-      student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-      date DATE NOT NULL,
-      status TEXT NOT NULL CHECK (status IN ('present', 'absent', 'authorised')),
-      authorised_absence INTEGER NOT NULL DEFAULT 0,
-      unauthorised_absence INTEGER NOT NULL DEFAULT 0,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-
-  const existing = await db.select().from(users).limit(1);
-  if (existing.length === 0) {
-    await seedDemoData();
-  }
-
-  const existingYears = await db.select().from(academicYears).limit(1);
-  if (existingYears.length === 0) {
-    const yearNames = Array.from(new Set(demoData.years));
-    for (const year of yearNames) {
-      await db.insert(academicYears).values({ id: crypto.randomUUID(), name: year }).onConflictDoNothing();
+let schoolDataCache:
+  | {
+      expiresAt: number;
+      data?: SchoolData;
+      promise?: Promise<SchoolData>;
     }
-  }
+  | null = null;
+
+const SCHOOL_DATA_CACHE_MS = process.env.NODE_ENV === "production" ? 0 : 750;
+
+function clearSchoolDataCache() {
+  schoolDataCache = null;
 }
 
-async function seedDemoData() {
+export async function seedDemoData() {
   if (!db) return;
 
   for (const user of demoData.users) {
@@ -175,7 +100,16 @@ async function seedDemoData() {
   }
 }
 
-export async function getSchoolData(): Promise<SchoolData> {
+export async function getAcademicYearNames(): Promise<string[]> {
+  if (!db) {
+    return demoStore.data.years;
+  }
+
+  const rows = await db.select().from(academicYears).orderBy(asc(academicYears.name));
+  return rows.map((year) => year.name);
+}
+
+export async function getSchoolData(options: { bypassCache?: boolean } = {}): Promise<SchoolData> {
   if (!db) {
     return {
       ...demoStore.data,
@@ -183,19 +117,47 @@ export async function getSchoolData(): Promise<SchoolData> {
     };
   }
 
-  await ensureSchema();
+  if (!options.bypassCache && schoolDataCache) {
+    if (schoolDataCache.data && schoolDataCache.expiresAt > Date.now()) {
+      return schoolDataCache.data;
+    }
+    if (schoolDataCache.promise) return schoolDataCache.promise;
+  }
 
-  const [userRows, studentRows, subjectRows, yearRows, teacherSubjectRows, studentSubjectRows, reportRows, attendanceRows] =
-    await Promise.all([
-      db.select().from(users).orderBy(desc(users.createdAt)),
-      db.select().from(students).orderBy(desc(students.createdAt)),
-      db.select().from(subjects).orderBy(asc(subjects.year), asc(subjects.name)),
-      db.select().from(academicYears).orderBy(asc(academicYears.name)),
-      db.select().from(teacherSubjects).orderBy(desc(teacherSubjects.createdAt)),
-      db.select().from(studentSubjects).orderBy(desc(studentSubjects.createdAt)),
-      db.select().from(reports).orderBy(desc(reports.createdAt)),
-      db.select().from(attendance).orderBy(desc(attendance.date), desc(attendance.createdAt)),
-    ]);
+  const promise = loadSchoolData();
+  if (SCHOOL_DATA_CACHE_MS > 0 && !options.bypassCache) {
+    schoolDataCache = { expiresAt: Date.now() + SCHOOL_DATA_CACHE_MS, promise };
+  }
+
+  const data = await promise;
+  if (SCHOOL_DATA_CACHE_MS > 0 && !options.bypassCache) {
+    schoolDataCache = { expiresAt: Date.now() + SCHOOL_DATA_CACHE_MS, data };
+  }
+  return data;
+}
+
+async function loadSchoolData(): Promise<SchoolData> {
+  if (!db) throw new Error("Database is not configured");
+
+  const [
+    userRows,
+    studentRows,
+    subjectRows,
+    yearRows,
+    teacherSubjectRows,
+    studentSubjectRows,
+    reportRows,
+    attendanceRows,
+  ] = await Promise.all([
+    db.select().from(users).orderBy(desc(users.createdAt)),
+    db.select().from(students).orderBy(desc(students.createdAt)),
+    db.select().from(subjects).orderBy(asc(subjects.year), asc(subjects.name)),
+    db.select().from(academicYears).orderBy(asc(academicYears.name)),
+    db.select().from(teacherSubjects).orderBy(desc(teacherSubjects.createdAt)),
+    db.select().from(studentSubjects).orderBy(desc(studentSubjects.createdAt)),
+    db.select().from(reports).orderBy(desc(reports.createdAt)),
+    db.select().from(attendance).orderBy(desc(attendance.date), desc(attendance.createdAt)),
+  ]);
 
   return {
     users: userRows as SchoolData["users"],
@@ -227,7 +189,6 @@ export async function mutateSchoolData(
     return getSchoolData();
   }
 
-  await ensureSchema();
   const id = typeof payload.id === "string" ? payload.id : crypto.randomUUID();
 
   if (action === "create-user") {
@@ -274,25 +235,7 @@ export async function mutateSchoolData(
   }
 
   if (action === "create-student") {
-    const studentYear = String(payload.year ?? "");
-    await db.insert(students).values({
-      id,
-      studentId: String(payload.studentId ?? ""),
-      name: String(payload.name ?? ""),
-      year: studentYear,
-      attendance: 100,
-      status: "active",
-    });
-    const yearAssignments = await db.select().from(teacherSubjects).where(eq(teacherSubjects.year, studentYear));
-    const subjectIds = Array.from(new Set(yearAssignments.map((assignment) => assignment.subjectId)));
-    for (const subjectId of subjectIds) {
-      await db.insert(studentSubjects).values({
-        id: crypto.randomUUID(),
-        studentId: id,
-        subjectId,
-        year: studentYear,
-      }).onConflictDoNothing();
-    }
+    await createStudentWithAssignedSubjects(payload, id);
   }
 
   if (action === "update-student") {
@@ -397,7 +340,77 @@ export async function mutateSchoolData(
     });
   }
 
-  return getSchoolData();
+  clearSchoolDataCache();
+  return getSchoolData({ bypassCache: true });
+}
+
+export async function createStudentWithAssignedSubjects(
+  payload: Record<string, unknown>,
+  id = crypto.randomUUID(),
+) {
+  if (!db) {
+    mutateDemoData("create-student", { ...payload, id }, { id: "public-api", role: "admin" });
+    const student = demoStore.data.students.find((item) => item.id === id || item.studentId === payload.studentId);
+    return {
+      student: student ?? null,
+      allottedSubjects: student
+        ? demoStore.data.studentSubjects
+            .filter((item) => item.studentId === student.id)
+            .map((item) => ({
+              id: item.id,
+              subjectId: item.subjectId,
+              subjectName: demoStore.data.subjects.find((subject) => subject.id === item.subjectId)?.name ?? "Subject",
+              year: item.year,
+            }))
+        : [],
+    };
+  }
+
+  const studentYear = String(payload.year ?? "");
+  const student = {
+    id,
+    studentId: String(payload.studentId ?? ""),
+    name: String(payload.name ?? ""),
+    year: studentYear,
+    attendance: 100,
+    status: "active" as const,
+  };
+
+  await db.insert(students).values(student);
+
+  const yearAssignments = await db
+    .select({
+      subjectId: teacherSubjects.subjectId,
+      subjectName: subjects.name,
+    })
+    .from(teacherSubjects)
+    .innerJoin(subjects, eq(teacherSubjects.subjectId, subjects.id))
+    .where(eq(teacherSubjects.year, studentYear));
+
+  const subjectMap = new Map(yearAssignments.map((assignment) => [assignment.subjectId, assignment.subjectName]));
+  const subjectIds = Array.from(subjectMap.keys());
+  const allottedSubjects = subjectIds.map((subjectId) => ({
+    id: crypto.randomUUID(),
+    studentId: id,
+    subjectId,
+    year: studentYear,
+  }));
+
+  if (allottedSubjects.length > 0) {
+    await db.insert(studentSubjects).values(allottedSubjects).onConflictDoNothing();
+  }
+
+  clearSchoolDataCache();
+
+  return {
+    student,
+    allottedSubjects: allottedSubjects.map((item) => ({
+      id: item.id,
+      subjectId: item.subjectId,
+      subjectName: subjectMap.get(item.subjectId) ?? "Subject",
+      year: item.year,
+    })),
+  };
 }
 
 function mutateDemoData(action: string, payload: Record<string, unknown>, sessionUser: SessionUser) {
@@ -581,7 +594,6 @@ export async function authenticateUser(email: string, password: string) {
     return user;
   }
 
-  await ensureSchema();
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (!user || user.password !== password || user.status === "blocked") return null;
   return user as SchoolData["users"][number];
@@ -592,7 +604,6 @@ export async function getUserById(id: string) {
     return demoStore.data.users.find((user) => user.id === id) ?? null;
   }
 
-  await ensureSchema();
   const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return (user as SchoolData["users"][number] | undefined) ?? null;
 }

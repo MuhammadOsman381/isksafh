@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { getSchoolData } from "@/lib/supabase-db";
+import { getAcademicYearNames } from "@/lib/supabase-db";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const data = await getSchoolData();
-    return NextResponse.json({ years: data.years });
+    const years = await getAcademicYearNames();
+    return NextResponse.json({ years });
   } catch (error) {
     return NextResponse.json(
       {

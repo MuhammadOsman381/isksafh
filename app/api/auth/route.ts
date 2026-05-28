@@ -5,6 +5,8 @@ import { authenticateUser, getUserById } from "@/lib/supabase-db";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "local-school-secret");
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("school_session")?.value;
   if (!token) {

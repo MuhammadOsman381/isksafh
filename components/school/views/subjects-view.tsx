@@ -20,7 +20,6 @@ export function SubjectsView({
   assignTeacherSubject,
   updateTeacherAssignment,
   deleteTeacherAssignment,
-  deleteSubject,
 }: {
   data: SchoolData;
   subjects: SchoolData["subjects"];
@@ -36,7 +35,6 @@ export function SubjectsView({
   assignTeacherSubject: FormHandler;
   updateTeacherAssignment: (event: React.FormEvent<HTMLFormElement>, assignment: AssignmentForm) => void;
   deleteTeacherAssignment: (id: string) => void;
-  deleteSubject: (id: string) => void;
 }) {
   const teachers = data.users.filter((user) => user.role === "teacher" && user.status === "active");
   const [editingAssignment, setEditingAssignment] = useState<AssignmentForm | null>(null);

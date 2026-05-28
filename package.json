@@ -3,10 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NEXT_TELEMETRY_DISABLED=1 npx -y node@20 node_modules/next/dist/bin/next dev --webpack --disable-source-maps --no-server-fast-refresh",
+    "dev:system-node": "NEXT_TELEMETRY_DISABLED=1 next dev --webpack",
+    "dev:turbo": "NEXT_TELEMETRY_DISABLED=1 next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

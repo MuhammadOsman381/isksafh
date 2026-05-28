@@ -50,6 +50,36 @@ const defaultTabs: Record<Role, Tab> = {
   attendent: "dashboard",
 };
 
+let dashboardBootstrapPromise:
+  | Promise<{
+      schoolData: SchoolData;
+      session: { user: User | null } | null;
+    }>
+  | null = null;
+
+function loadDashboardBootstrap() {
+  if (dashboardBootstrapPromise) return dashboardBootstrapPromise;
+
+  const promise = Promise.all([
+    fetch("/api/system", { cache: "no-store" }).then(
+      (response) => response.json() as Promise<SchoolData>,
+    ),
+    fetch("/api/auth", { cache: "no-store" }).then(async (response) => {
+      if (!response.ok) return null;
+      return (await response.json()) as { user: User | null };
+    }),
+  ]).then(([schoolData, session]) => ({ schoolData, session }));
+
+  dashboardBootstrapPromise = promise;
+  promise.finally(() => {
+    window.setTimeout(() => {
+      if (dashboardBootstrapPromise === promise) dashboardBootstrapPromise = null;
+    }, 1000);
+  });
+
+  return promise;
+}
+
 function teacherCanSeeStudent(student: SchoolData["students"][number], data: SchoolData, teacherId: string) {
   const teacherAssignments = data.teacherSubjects.filter((assignment) => assignment.teacherId === teacherId);
   const studentSubjectIds = new Set(
@@ -118,16 +148,8 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
   useEffect(() => {
     let active = true;
 
-    Promise.all([
-      fetch("/api/system", { cache: "no-store" }).then(
-        (response) => response.json() as Promise<SchoolData>,
-      ),
-      fetch("/api/auth", { cache: "no-store" }).then(async (response) => {
-        if (!response.ok) return null;
-        return (await response.json()) as { user: User | null };
-      }),
-    ])
-      .then(([schoolData, session]) => {
+    loadDashboardBootstrap()
+      .then(({ schoolData, session }) => {
         if (!active) return;
         setData(schoolData);
         if (session?.user) {
@@ -210,6 +232,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
       return;
     }
     const payload = (await response.json()) as { user: User };
+    dashboardBootstrapPromise = null;
     setCurrentUser(payload.user);
     setRole(payload.user.role);
     setActiveTab(defaultTabs[payload.user.role]);
@@ -218,6 +241,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
 
   async function logout() {
     await fetch("/api/auth", { method: "DELETE" });
+    dashboardBootstrapPromise = null;
     setRole(null);
     setCurrentUser(null);
     setActiveTab("dashboard");
@@ -372,7 +396,6 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
           assignTeacherSubject={assignTeacherSubject}
           updateTeacherAssignment={updateTeacherAssignment}
           deleteTeacherAssignment={deleteTeacherAssignment}
-          deleteSubject={(id) => void mutate("delete-subject", { id })}
         />
       )}
       {activeTab === "marks" && (
