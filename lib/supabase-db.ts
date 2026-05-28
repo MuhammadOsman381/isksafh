@@ -250,17 +250,19 @@ export async function mutateSchoolData(
     const [existingStudent] = await db.select().from(students).where(eq(students.id, studentId)).limit(1);
     if (!existingStudent) throw new Error("Student does not exist");
 
-    const updated = await db.update(students)
+    const [studentWithSameId] = await db.select().from(students).where(eq(students.studentId, nextStudentId)).limit(1);
+    if (studentWithSameId && studentWithSameId.id !== studentId) {
+      throw new Error(`Student ID ${nextStudentId} is already used by another student`);
+    }
+
+    await db.update(students)
       .set({
         studentId: nextStudentId,
         name: nextName,
         year: nextYear,
         status: normalizeStudentStatus(payload.status),
       })
-      .where(eq(students.id, studentId))
-      .returning({ id: students.id });
-
-    if (updated.length === 0) throw new Error("Student update failed");
+      .where(eq(students.id, studentId));
 
     if (existingStudent.year !== nextYear) {
       await db.delete(studentSubjects).where(eq(studentSubjects.studentId, studentId));
