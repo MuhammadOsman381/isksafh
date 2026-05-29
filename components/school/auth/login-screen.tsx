@@ -86,7 +86,7 @@ export function LoginScreen({
                       {item === "attendent" ? <CalendarCheck size={21} /> : null}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold capitalize">{item}</p>
+                      <p className="font-semibold capitalize">{item == "attendent" ? "Registrar" :item}</p>
                       <p className="mt-1 text-sm text-zinc-400 group-hover:text-zinc-600">
                         {roleCopy[item]}
                       </p>
