@@ -84,16 +84,43 @@ export async function createDefaultAdminUser() {
     return { user: admin, created: true };
   }
 
-  const [existing] = await db.select().from(users).where(eq(users.email, admin.email)).limit(1);
+  if (!client) throw new Error("Database is not configured");
+
+  await client`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL DEFAULT 'school123',
+      role TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS id TEXT`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT 'school123'`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`;
+
+  const existingRows = await client`
+    SELECT id, name, email, password, role, status
+    FROM users
+    WHERE email = ${admin.email}
+    LIMIT 1
+  `;
+  const existing = existingRows[0] as typeof admin | undefined;
   if (existing) {
-    await db.update(users)
-      .set({
-        name: admin.name,
-        password: admin.password,
-        role: admin.role,
-        status: admin.status,
-      })
-      .where(eq(users.email, admin.email));
+    await client`
+      UPDATE users
+      SET name = ${admin.name},
+          password = ${admin.password},
+          role = ${admin.role},
+          status = ${admin.status}
+      WHERE email = ${admin.email}
+    `;
     clearSchoolDataCache();
     return {
       user: { ...existing, name: admin.name, password: admin.password, role: admin.role, status: admin.status },
@@ -101,7 +128,10 @@ export async function createDefaultAdminUser() {
     };
   }
 
-  await db.insert(users).values(admin);
+  await client`
+    INSERT INTO users (id, name, email, password, role, status)
+    VALUES (${admin.id}, ${admin.name}, ${admin.email}, ${admin.password}, ${admin.role}, ${admin.status})
+  `;
   clearSchoolDataCache();
   return { user: admin, created: true };
 }
