@@ -54,21 +54,46 @@ let dashboardBootstrapPromise:
   | Promise<{
       schoolData: SchoolData;
       session: { user: User | null } | null;
+      error?: string;
     }>
   | null = null;
+
+function normalizeSchoolData(data: Partial<SchoolData> | null | undefined): SchoolData {
+  return {
+    users: Array.isArray(data?.users) ? data.users : [],
+    students: Array.isArray(data?.students) ? data.students : [],
+    subjects: Array.isArray(data?.subjects) ? data.subjects : [],
+    years: Array.isArray(data?.years) ? data.years : [],
+    teacherSubjects: Array.isArray(data?.teacherSubjects) ? data.teacherSubjects : [],
+    studentSubjects: Array.isArray(data?.studentSubjects) ? data.studentSubjects : [],
+    reports: Array.isArray(data?.reports) ? data.reports : [],
+    attendance: Array.isArray(data?.attendance) ? data.attendance : [],
+    meta: data?.meta ?? initialData.meta,
+  };
+}
+
+async function fetchSchoolData() {
+  const response = await fetch("/api/system", { cache: "no-store" });
+  const payload = await response.json().catch(() => null) as (Partial<SchoolData> & { error?: string; detail?: string }) | null;
+  if (!response.ok) {
+    return {
+      schoolData: initialData,
+      error: payload?.detail ?? payload?.error ?? "Unable to load school data",
+    };
+  }
+  return { schoolData: normalizeSchoolData(payload) };
+}
 
 function loadDashboardBootstrap() {
   if (dashboardBootstrapPromise) return dashboardBootstrapPromise;
 
   const promise = Promise.all([
-    fetch("/api/system", { cache: "no-store" }).then(
-      (response) => response.json() as Promise<SchoolData>,
-    ),
+    fetchSchoolData(),
     fetch("/api/auth", { cache: "no-store", credentials: "same-origin" }).then(async (response) => {
       if (!response.ok) return null;
       return (await response.json()) as { user: User | null };
     }),
-  ]).then(([schoolData, session]) => ({ schoolData, session }));
+  ]).then(([system, session]) => ({ schoolData: system.schoolData, session, error: system.error }));
 
   dashboardBootstrapPromise = promise;
   promise.finally(() => {
@@ -149,9 +174,10 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     let active = true;
 
     loadDashboardBootstrap()
-      .then(({ schoolData, session }) => {
+      .then(({ schoolData, session, error }) => {
         if (!active) return;
         setData(schoolData);
+        if (error) setNotice(error);
         if (session?.user) {
           setCurrentUser(session.user);
           setRole(session.user.role);
