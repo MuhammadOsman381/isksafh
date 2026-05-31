@@ -4,7 +4,7 @@ import postgres from "postgres";
 import { demoData, SchoolData, User } from "./demo-data";
 import { academicYears, attendance, reports, studentSubjects, students, subjects, teacherSubjects, users } from "./db/schema";
 
-const databaseUrl = process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL;
+const databaseUrl = process.env.SUPABASE_DATABASE_URL;
 
 export const hasDatabase = Boolean(databaseUrl);
 
