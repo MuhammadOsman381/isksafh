@@ -60,6 +60,52 @@ function clearSchoolDataCache() {
   schoolDataCache = null;
 }
 
+export async function createDefaultAdminUser() {
+  const admin = {
+    id: crypto.randomUUID(),
+    name: "Admin",
+    email: "admin@gmail.com",
+    password: "12345678",
+    role: "admin" as const,
+    status: "active" as const,
+  };
+
+  if (!db) {
+    const existing = demoStore.data.users.find((user) => user.email.toLowerCase() === admin.email);
+    if (existing) {
+      demoStore.data.users = demoStore.data.users.map((user) =>
+        user.email.toLowerCase() === admin.email
+          ? { ...user, name: admin.name, password: admin.password, role: admin.role, status: admin.status }
+          : user,
+      );
+      return { user: demoStore.data.users.find((user) => user.email.toLowerCase() === admin.email), created: false };
+    }
+    demoStore.data.users.unshift(admin);
+    return { user: admin, created: true };
+  }
+
+  const [existing] = await db.select().from(users).where(eq(users.email, admin.email)).limit(1);
+  if (existing) {
+    await db.update(users)
+      .set({
+        name: admin.name,
+        password: admin.password,
+        role: admin.role,
+        status: admin.status,
+      })
+      .where(eq(users.email, admin.email));
+    clearSchoolDataCache();
+    return {
+      user: { ...existing, name: admin.name, password: admin.password, role: admin.role, status: admin.status },
+      created: false,
+    };
+  }
+
+  await db.insert(users).values(admin);
+  clearSchoolDataCache();
+  return { user: admin, created: true };
+}
+
 export async function seedDemoData() {
   if (!db) return;
 
