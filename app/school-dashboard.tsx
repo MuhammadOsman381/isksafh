@@ -302,6 +302,51 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     setNewStudent({ studentId: "", name: "", year: newStudent.year, status: "active" });
   }
 
+  async function importStudents(event: FormEvent<HTMLFormElement>, year: string, file: File | null) {
+    event.preventDefault();
+    if (!file) {
+      setNotice("Excel file is required");
+      return false;
+    }
+
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append("year", year);
+      formData.append("file", file);
+
+      const response = await fetch("/api/students/import", {
+        method: "POST",
+        credentials: "same-origin",
+        body: formData,
+      });
+      const payload = await response.json().catch(() => null) as {
+        created?: number;
+        updated?: number;
+        skipped?: number;
+        data?: Partial<SchoolData>;
+        error?: string;
+        detail?: string;
+      } | null;
+
+      if (!response.ok || !payload?.data) {
+        setNotice(payload?.detail ?? payload?.error ?? "Student import failed");
+        return false;
+      }
+
+      setData(normalizeSchoolData(payload.data));
+      setNotice(
+        `Imported ${payload.created ?? 0} new, updated ${payload.updated ?? 0}, skipped ${payload.skipped ?? 0}`,
+      );
+      return true;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Student import failed");
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function updateStudent(event: FormEvent<HTMLFormElement>, student: NewStudentForm) {
     event.preventDefault();
     return mutate("update-student", student as unknown as Record<string, unknown>);
@@ -409,6 +454,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
           createStudent={createStudent}
           updateStudent={updateStudent}
           deleteStudent={(id) => void mutate("delete-student", { id })}
+          importStudents={importStudents}
         />
       )}
       {activeTab === "teachers" && (

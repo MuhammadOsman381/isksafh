@@ -17,6 +17,7 @@ export function StudentsView({
   createStudent,
   updateStudent,
   deleteStudent,
+  importStudents,
 }: {
   role: Role;
   years: string[];
@@ -28,9 +29,13 @@ export function StudentsView({
   createStudent: FormHandler;
   updateStudent: (event: React.FormEvent<HTMLFormElement>, student: NewStudentForm) => Promise<boolean>;
   deleteStudent: (id: string) => void;
+  importStudents: (event: React.FormEvent<HTMLFormElement>, year: string, file: File | null) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState<NewStudentForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [importYear, setImportYear] = useState(years[0] ?? "Year 7");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
 
   async function handleUpdateStudent(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,6 +44,14 @@ export function StudentsView({
     const saved = await updateStudent(event, editing);
     setSavingEdit(false);
     if (saved) setEditing(null);
+  }
+
+  async function handleImportStudents(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setImporting(true);
+    const imported = await importStudents(event, importYear, importFile);
+    setImporting(false);
+    if (imported) setImportFile(null);
   }
 
   return (
@@ -51,6 +64,22 @@ export function StudentsView({
               <TextInput label="Full name" value={newStudent.name} onChange={(value) => setNewStudent({ ...newStudent, name: value })} required />
               <SelectInput label="Year" value={newStudent.year} options={ensureYears(years)} onChange={(value) => setNewStudent({ ...newStudent, year: value })} />
               <PrimaryButton label="Add student" />
+            </form>
+          </Panel>
+          <Panel title="Import Students" subtitle="Choose a year and upload Excel. Only first sheet Student# and Name are used">
+            <form onSubmit={handleImportStudents} className="grid gap-3">
+              <SelectInput label="Year" value={importYear} options={ensureYears(years)} onChange={setImportYear} />
+              <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
+                Excel file
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  required
+                  onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
+                  className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-950 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-950 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+                />
+              </label>
+              <PrimaryButton label={importing ? "Importing..." : "Import students"} disabled={importing} />
             </form>
           </Panel>
           {editing ? (

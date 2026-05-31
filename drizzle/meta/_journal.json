@@ -8,6 +8,13 @@
       "when": 1779979372327,
       "tag": "0000_nifty_rafael_vega",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780248118438,
+      "tag": "0001_clean_bastion",
+      "breakpoints": true
     }
   ]
 }

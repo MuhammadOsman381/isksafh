@@ -1,0 +1,19 @@
+CREATE INDEX "attendance_student_id_idx" ON "attendance" USING btree ("student_id");--> statement-breakpoint
+CREATE INDEX "attendance_date_created_at_idx" ON "attendance" USING btree ("date","created_at");--> statement-breakpoint
+CREATE INDEX "reports_student_id_idx" ON "reports" USING btree ("student_id");--> statement-breakpoint
+CREATE INDEX "reports_subject_id_idx" ON "reports" USING btree ("subject_id");--> statement-breakpoint
+CREATE INDEX "reports_teacher_id_idx" ON "reports" USING btree ("teacher_id");--> statement-breakpoint
+CREATE INDEX "reports_created_at_idx" ON "reports" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "student_subjects_student_id_idx" ON "student_subjects" USING btree ("student_id");--> statement-breakpoint
+CREATE INDEX "student_subjects_subject_id_idx" ON "student_subjects" USING btree ("subject_id");--> statement-breakpoint
+CREATE INDEX "student_subjects_year_idx" ON "student_subjects" USING btree ("year");--> statement-breakpoint
+CREATE INDEX "student_subjects_created_at_idx" ON "student_subjects" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "students_year_idx" ON "students" USING btree ("year");--> statement-breakpoint
+CREATE INDEX "students_created_at_idx" ON "students" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "subjects_year_name_idx" ON "subjects" USING btree ("year","name");--> statement-breakpoint
+CREATE INDEX "teacher_subjects_teacher_id_idx" ON "teacher_subjects" USING btree ("teacher_id");--> statement-breakpoint
+CREATE INDEX "teacher_subjects_subject_id_idx" ON "teacher_subjects" USING btree ("subject_id");--> statement-breakpoint
+CREATE INDEX "teacher_subjects_year_idx" ON "teacher_subjects" USING btree ("year");--> statement-breakpoint
+CREATE INDEX "teacher_subjects_created_at_idx" ON "teacher_subjects" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "users_role_idx" ON "users" USING btree ("role");--> statement-breakpoint
+CREATE INDEX "users_created_at_idx" ON "users" USING btree ("created_at");

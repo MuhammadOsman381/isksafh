@@ -54,7 +54,7 @@ let schoolDataCache:
     }
   | null = null;
 
-const SCHOOL_DATA_CACHE_MS = process.env.NODE_ENV === "production" ? 0 : 750;
+const SCHOOL_DATA_CACHE_MS = process.env.NODE_ENV === "production" ? 10_000 : 750;
 
 function clearSchoolDataCache() {
   schoolDataCache = null;
@@ -623,6 +623,85 @@ export async function createStudentWithAssignedSubjects(
       year: item.year,
     })),
   };
+}
+
+export async function importStudentsForYear(
+  year: string,
+  rows: Array<{ studentId: string; name: string }>,
+) {
+  const cleanYear = year.trim();
+  const cleanRows = rows
+    .map((row) => ({
+      studentId: row.studentId.trim(),
+      name: row.name.trim(),
+    }))
+    .filter((row) => row.studentId && row.name);
+
+  if (!cleanYear) throw new Error("Year is required");
+  if (cleanRows.length === 0) throw new Error("No students found in the first sheet");
+
+  if (!db) {
+    let created = 0;
+    let updated = 0;
+    for (const row of cleanRows) {
+      const existing = demoStore.data.students.find((student) => student.studentId === row.studentId);
+      if (existing) {
+        existing.name = row.name;
+        existing.year = cleanYear;
+        existing.status = "active";
+        updated += 1;
+      } else {
+        mutateDemoData("create-student", { studentId: row.studentId, name: row.name, year: cleanYear }, { id: "import", role: "admin" });
+        created += 1;
+      }
+    }
+    return { created, updated, skipped: rows.length - cleanRows.length, data: await getSchoolData({ bypassCache: true }) };
+  }
+
+  const yearAssignments = await db.select().from(teacherSubjects).where(eq(teacherSubjects.year, cleanYear));
+  const subjectIds = Array.from(new Set(yearAssignments.map((assignment) => assignment.subjectId)));
+  let created = 0;
+  let updated = 0;
+
+  for (const row of cleanRows) {
+    const [existing] = await db.select().from(students).where(eq(students.studentId, row.studentId)).limit(1);
+    const studentId = existing?.id ?? crypto.randomUUID();
+
+    if (existing) {
+      await db.update(students)
+        .set({
+          name: row.name,
+          year: cleanYear,
+          status: "active",
+        })
+        .where(eq(students.id, existing.id));
+      updated += 1;
+    } else {
+      await db.insert(students).values({
+        id: studentId,
+        studentId: row.studentId,
+        name: row.name,
+        year: cleanYear,
+        attendance: 100,
+        status: "active",
+      });
+      created += 1;
+    }
+
+    if (subjectIds.length > 0) {
+      await db.insert(studentSubjects).values(
+        subjectIds.map((subjectId) => ({
+          id: crypto.randomUUID(),
+          studentId,
+          subjectId,
+          year: cleanYear,
+        })),
+      ).onConflictDoNothing();
+    }
+  }
+
+  clearSchoolDataCache();
+  return { created, updated, skipped: rows.length - cleanRows.length, data: await getSchoolData({ bypassCache: true }) };
 }
 
 function mutateDemoData(action: string, payload: Record<string, unknown>, sessionUser: SessionUser) {
