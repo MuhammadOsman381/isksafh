@@ -60,6 +60,29 @@ function clearSchoolDataCache() {
   schoolDataCache = null;
 }
 
+async function ensureUsersTable() {
+  if (!client) throw new Error("Database is not configured");
+
+  await client`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL DEFAULT 'school123',
+      role TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS id TEXT`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT 'school123'`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`;
+  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`;
+}
+
 export async function createDefaultAdminUser() {
   const admin = {
     id: crypto.randomUUID(),
@@ -86,24 +109,7 @@ export async function createDefaultAdminUser() {
 
   if (!client) throw new Error("Database is not configured");
 
-  await client`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL DEFAULT 'school123',
-      role TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'active',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS id TEXT`;
-  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT`;
-  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`;
-  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT DEFAULT 'school123'`;
-  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT`;
-  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`;
-  await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`;
+  await ensureUsersTable();
 
   const existingRows = await client`
     SELECT id, name, email, password, role, status
@@ -134,6 +140,81 @@ export async function createDefaultAdminUser() {
   `;
   clearSchoolDataCache();
   return { user: admin, created: true };
+}
+
+export async function getAdminUsersForSuperAdmin() {
+  if (!db) {
+    return demoStore.data.users.filter((user) => user.role === "admin");
+  }
+  if (!client) throw new Error("Database is not configured");
+  await ensureUsersTable();
+  const rows = await client`
+    SELECT id, name, email, password, role, status
+    FROM users
+    WHERE role = 'admin'
+    ORDER BY email ASC
+  `;
+  return rows.map((row) => ({
+    id: String(row.id),
+    name: String(row.name ?? ""),
+    email: String(row.email ?? ""),
+    password: String(row.password ?? ""),
+    role: "admin" as const,
+    status: row.status === "blocked" ? "blocked" as const : "active" as const,
+  }));
+}
+
+export async function updateAdminLoginDetails(payload: Record<string, unknown>) {
+  const currentEmail = String(payload.currentEmail ?? "").trim().toLowerCase();
+  const name = String(payload.name ?? "Admin").trim() || "Admin";
+  const email = String(payload.email ?? "").trim().toLowerCase();
+  const password = String(payload.password ?? "").trim();
+  const status = normalizeUserStatus(payload.status);
+
+  if (!email || !password) throw new Error("Email and password are required");
+
+  if (!db) {
+    const existing = demoStore.data.users.find((user) => user.role === "admin" && user.email.toLowerCase() === currentEmail);
+    if (existing) {
+      demoStore.data.users = demoStore.data.users.map((user) =>
+        user.id === existing.id ? { ...user, name, email, password, role: "admin", status } : user,
+      );
+      return demoStore.data.users.find((user) => user.id === existing.id);
+    }
+    const admin = { id: crypto.randomUUID(), name, email, password, role: "admin" as const, status };
+    demoStore.data.users.unshift(admin);
+    return admin;
+  }
+
+  if (!client) throw new Error("Database is not configured");
+  await ensureUsersTable();
+
+  const existingRows = currentEmail
+    ? await client`SELECT id FROM users WHERE lower(email) = ${currentEmail} AND role = 'admin' LIMIT 1`
+    : [];
+  const existing = existingRows[0] as { id: string } | undefined;
+
+  if (existing) {
+    await client`
+      UPDATE users
+      SET name = ${name},
+          email = ${email},
+          password = ${password},
+          role = 'admin',
+          status = ${status}
+      WHERE id = ${existing.id}
+    `;
+    clearSchoolDataCache();
+    return { id: existing.id, name, email, password, role: "admin" as const, status };
+  }
+
+  const id = crypto.randomUUID();
+  await client`
+    INSERT INTO users (id, name, email, password, role, status)
+    VALUES (${id}, ${name}, ${email}, ${password}, 'admin', ${status})
+  `;
+  clearSchoolDataCache();
+  return { id, name, email, password, role: "admin" as const, status };
 }
 
 export async function seedDemoData() {
