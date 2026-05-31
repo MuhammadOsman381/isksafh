@@ -287,6 +287,10 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     setNewYear({ name: "" });
   }
 
+  function deleteYear(name: string) {
+    void mutate("delete-year", { name });
+  }
+
   function createSubject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void mutate("create-subject", newSubject);
@@ -407,6 +411,8 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
           assignTeacherSubject={assignTeacherSubject}
           updateTeacherAssignment={updateTeacherAssignment}
           deleteTeacherAssignment={deleteTeacherAssignment}
+          deleteSubject={(id) => void mutate("delete-subject", { id })}
+          deleteYear={deleteYear}
         />
       )}
       {activeTab === "marks" && (

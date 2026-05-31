@@ -20,6 +20,8 @@ export function SubjectsView({
   assignTeacherSubject,
   updateTeacherAssignment,
   deleteTeacherAssignment,
+  deleteSubject,
+  deleteYear,
 }: {
   data: SchoolData;
   subjects: SchoolData["subjects"];
@@ -35,6 +37,8 @@ export function SubjectsView({
   assignTeacherSubject: FormHandler;
   updateTeacherAssignment: (event: React.FormEvent<HTMLFormElement>, assignment: AssignmentForm) => void;
   deleteTeacherAssignment: (id: string) => void;
+  deleteSubject: (id: string) => void;
+  deleteYear: (name: string) => void;
 }) {
   const teachers = data.users.filter((user) => user.role === "teacher" && user.status === "active");
   const [editingAssignment, setEditingAssignment] = useState<AssignmentForm | null>(null);
@@ -83,6 +87,34 @@ export function SubjectsView({
       ) : null}
 
       <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Academic Years" subtitle={`${years.length} years`}>
+          <DataTable
+            headers={["Year", "Students", "Actions"]}
+            rows={ensureYears(years).map((year) => {
+              const studentsInYear = data.students.filter((student) => student.year === year).length;
+              return [
+                year,
+                `${studentsInYear} students`,
+                <IconButton key="delete" label="Delete year" onClick={() => deleteYear(year)} />,
+              ];
+            })}
+          />
+        </Panel>
+
+        <Panel title="Subjects" subtitle={`${subjects.length} subjects`}>
+          <DataTable
+            headers={["Subject", "Assigned teachers", "Actions"]}
+            rows={subjects.map((subject) => {
+              const assignedTeachers = data.teacherSubjects.filter((item) => item.subjectId === subject.id).length;
+              return [
+                subject.name,
+                `${assignedTeachers} assignments`,
+                <IconButton key="delete" label="Delete subject" onClick={() => deleteSubject(subject.id)} />,
+              ];
+            })}
+          />
+        </Panel>
+
         <Panel title="Teacher Assignments" subtitle={`${data.teacherSubjects.length} assignments`}>
           <DataTable
             headers={["Teacher", "Year", "Subject", "Actions"]}

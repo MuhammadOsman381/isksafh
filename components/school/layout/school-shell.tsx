@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, Database, GraduationCap, Loader2, LogOut, Menu, Sparkles, X } from "lucide-react";
+import { ChevronRight, Database, Loader2, LogOut, Menu, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { pageTitle, tabs } from "../constants";
 import { LoadingState, StatusPill } from "../ui";

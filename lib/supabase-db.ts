@@ -222,6 +222,16 @@ export async function mutateSchoolData(
     await db.insert(academicYears).values({ id, name: String(payload.name ?? "") }).onConflictDoNothing();
   }
 
+  if (action === "delete-year") {
+    const yearName = String(payload.name ?? "").trim();
+    if (!yearName) throw new Error("Year name is required");
+    const studentsInYear = await db.select().from(students).where(eq(students.year, yearName)).limit(1);
+    if (studentsInYear.length > 0) throw new Error(`Cannot delete ${yearName} because students are assigned to it`);
+    await db.delete(teacherSubjects).where(eq(teacherSubjects.year, yearName));
+    await db.delete(studentSubjects).where(eq(studentSubjects.year, yearName));
+    await db.delete(academicYears).where(eq(academicYears.name, yearName));
+  }
+
   if (action === "create-subject") {
     await db.insert(subjects).values({
       id,
@@ -231,7 +241,12 @@ export async function mutateSchoolData(
   }
 
   if (action === "delete-subject") {
-    await db.delete(subjects).where(eq(subjects.id, String(payload.id)));
+    const subjectId = String(payload.id ?? "");
+    if (!subjectId) throw new Error("Subject is required");
+    await db.delete(reports).where(eq(reports.subjectId, subjectId));
+    await db.delete(teacherSubjects).where(eq(teacherSubjects.subjectId, subjectId));
+    await db.delete(studentSubjects).where(eq(studentSubjects.subjectId, subjectId));
+    await db.delete(subjects).where(eq(subjects.id, subjectId));
   }
 
   if (action === "create-student") {
@@ -349,16 +364,24 @@ export async function mutateSchoolData(
         .limit(1);
       if (studentAccess.length === 0) throw new Error("Subject is not allotted to this student");
     }
-    await db.insert(reports).values({
-      id,
-      studentId: String(payload.studentId ?? ""),
+    const studentId = String(payload.studentId ?? "");
+    const reportValues = {
+      studentId,
       subjectId,
       teacherId,
       percentage: Number(payload.percentage ?? 0),
       effort: String(payload.effort ?? ""),
       attainment: String(payload.attainment ?? ""),
       note: "",
-    });
+    };
+    const [existingReport] = await db.select().from(reports)
+      .where(and(eq(reports.studentId, studentId), eq(reports.subjectId, subjectId), eq(reports.teacherId, teacherId)))
+      .limit(1);
+    if (existingReport) {
+      await db.update(reports).set(reportValues).where(eq(reports.id, existingReport.id));
+    } else {
+      await db.insert(reports).values({ id, ...reportValues });
+    }
   }
 
   if (action === "create-attendance") {
@@ -479,11 +502,22 @@ function mutateDemoData(action: string, payload: Record<string, unknown>, sessio
     const name = String(payload.name ?? "");
     if (name && !demoStore.data.years.includes(name)) demoStore.data.years.push(name);
   }
+  if (action === "delete-year") {
+    const name = String(payload.name ?? "").trim();
+    const studentsInYear = demoStore.data.students.some((student) => student.year === name);
+    if (studentsInYear) throw new Error(`Cannot delete ${name} because students are assigned to it`);
+    demoStore.data.years = demoStore.data.years.filter((year) => year !== name);
+    demoStore.data.teacherSubjects = demoStore.data.teacherSubjects.filter((item) => item.year !== name);
+    demoStore.data.studentSubjects = demoStore.data.studentSubjects.filter((item) => item.year !== name);
+  }
   if (action === "create-subject") {
     demoStore.data.subjects.unshift({ id, name: String(payload.name ?? ""), year: "" });
   }
   if (action === "delete-subject") {
     demoStore.data.subjects = demoStore.data.subjects.filter((subject) => subject.id !== payload.id);
+    demoStore.data.teacherSubjects = demoStore.data.teacherSubjects.filter((item) => item.subjectId !== payload.id);
+    demoStore.data.studentSubjects = demoStore.data.studentSubjects.filter((item) => item.subjectId !== payload.id);
+    demoStore.data.reports = demoStore.data.reports.filter((report) => report.subjectId !== payload.id);
   }
   if (action === "create-student") {
     const studentYear = String(payload.year ?? "");
@@ -617,16 +651,26 @@ function mutateDemoData(action: string, payload: Record<string, unknown>, sessio
       );
       if (!studentAccess) throw new Error("Subject is not allotted to this student");
     }
-    demoStore.data.reports.unshift({
-      id,
-      studentId: String(payload.studentId ?? ""),
+    const studentId = String(payload.studentId ?? "");
+    const existingReport = demoStore.data.reports.find(
+      (report) => report.studentId === studentId && report.subjectId === subjectId && report.teacherId === teacherId,
+    );
+    const nextReport = {
+      studentId,
       subjectId,
       teacherId,
       percentage: Number(payload.percentage ?? 0),
       effort: String(payload.effort ?? ""),
       attainment: String(payload.attainment ?? ""),
       note: "",
-    });
+    };
+    if (existingReport) {
+      demoStore.data.reports = demoStore.data.reports.map((report) =>
+        report.id === existingReport.id ? { ...report, ...nextReport } : report,
+      );
+    } else {
+      demoStore.data.reports.unshift({ id, ...nextReport });
+    }
   }
   if (action === "create-attendance") {
     demoStore.data.attendance.unshift({

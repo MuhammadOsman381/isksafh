@@ -63,11 +63,28 @@ export function MarksView({
         ),
       )
     : availableSubjects;
-  const visibleReports = isTeacher
+  const rawVisibleReports = isTeacher
     ? data.reports.filter(
         (report) => report.teacherId === currentUser.id && assignedSubjectIds.has(report.subjectId),
       )
     : data.reports;
+  const visibleReports = Array.from(
+    rawVisibleReports
+      .reduce((map, report) => {
+        const key = `${report.studentId}:${report.subjectId}:${report.teacherId}`;
+        if (!map.has(key)) map.set(key, report);
+        return map;
+      }, new Map<string, SchoolData["reports"][number]>())
+      .values(),
+  );
+  const existingMark = newReport.studentId && newReport.subjectId
+    ? visibleReports.find(
+        (report) =>
+          report.studentId === newReport.studentId &&
+          report.subjectId === newReport.subjectId &&
+          (!isTeacher || report.teacherId === currentUser?.id),
+      )
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -110,7 +127,12 @@ export function MarksView({
               attainment: value,
             })}
           />
-          <PrimaryButton label="Save marks" />
+          {existingMark ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Existing marks found. Saving will update the previous entry instead of creating another one.
+            </p>
+          ) : null}
+          <PrimaryButton label={existingMark ? "Update marks" : "Save marks"} />
         </form>
       </Panel>
 
