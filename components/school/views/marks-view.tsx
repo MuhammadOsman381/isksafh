@@ -18,6 +18,8 @@ export function MarksView({
   setNewReport: (form: NewReportForm) => void;
   createReport: FormHandler;
 }) {
+
+  
   const [studentSearch, setStudentSearch] = useState("");
   const teachers = data.users.filter((user) => user.role === "teacher");
   const isTeacher = currentUser?.role === "teacher";
