@@ -164,6 +164,98 @@ export async function getAdminUsersForSuperAdmin() {
   }));
 }
 
+export async function getPrimaryAdminLoginDetails() {
+  if (!db) {
+    const admin = demoStore.data.users.find((user) => user.role === "admin");
+    return admin
+      ? {
+          name: admin.name,
+          email: admin.email,
+          password: admin.password,
+        }
+      : null;
+  }
+
+  if (!client) throw new Error("Database is not configured");
+  await ensureUsersTable();
+
+  const rows = await client`
+    SELECT name, email, password
+    FROM users
+    WHERE role = 'admin'
+    ORDER BY created_at ASC, email ASC
+    LIMIT 1
+  `;
+  const admin = rows[0] as { name: string | null; email: string | null; password: string | null } | undefined;
+  return admin
+    ? {
+        name: String(admin.name ?? ""),
+        email: String(admin.email ?? ""),
+        password: String(admin.password ?? ""),
+      }
+    : null;
+}
+
+export async function updatePrimaryAdminLoginDetails(payload: Record<string, unknown>) {
+  const name = String(payload.name ?? "").trim();
+  const email = String(payload.email ?? "").trim().toLowerCase();
+  const password = String(payload.password ?? "").trim();
+
+  if (!name || !email || !password) throw new Error("Name, email, and password are required");
+
+  if (!db) {
+    const existing = demoStore.data.users.find((user) => user.role === "admin");
+    if (existing) {
+      demoStore.data.users = demoStore.data.users.map((user) =>
+        user.id === existing.id ? { ...user, name, email, password, role: "admin", status: "active" } : user,
+      );
+      return { name, email, password };
+    }
+
+    demoStore.data.users.unshift({
+      id: crypto.randomUUID(),
+      name,
+      email,
+      password,
+      role: "admin",
+      status: "active",
+    });
+    return { name, email, password };
+  }
+
+  if (!client) throw new Error("Database is not configured");
+  await ensureUsersTable();
+
+  const existingRows = await client`
+    SELECT id
+    FROM users
+    WHERE role = 'admin'
+    ORDER BY created_at ASC, email ASC
+    LIMIT 1
+  `;
+  const existing = existingRows[0] as { id: string } | undefined;
+
+  if (existing) {
+    await client`
+      UPDATE users
+      SET name = ${name},
+          email = ${email},
+          password = ${password},
+          role = 'admin',
+          status = 'active'
+      WHERE id = ${existing.id}
+    `;
+  } else {
+    await client`
+      INSERT INTO users (id, name, email, password, role, status)
+      VALUES (${crypto.randomUUID()}, ${name}, ${email}, ${password}, 'admin', 'active')
+    `;
+  }
+
+  clearSchoolDataCache();
+  return { name, email, password };
+}
+
 export async function updateAdminLoginDetails(payload: Record<string, unknown>) {
   const currentEmail = String(payload.currentEmail ?? "").trim().toLowerCase();
   const name = String(payload.name ?? "Admin").trim() || "Admin";
