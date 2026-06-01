@@ -454,7 +454,18 @@ export async function mutateSchoolData(
   }
 
   if (action === "delete-student") {
+    const studentId = String(payload.id);
+    await db.delete(reports).where(eq(reports.studentId, studentId));
+    await db.delete(attendance).where(eq(attendance.studentId, studentId));
+    await db.delete(studentSubjects).where(eq(studentSubjects.studentId, studentId));
     await db.delete(students).where(eq(students.id, String(payload.id)));
+  }
+
+  if (action === "delete-all-students") {
+    await db.delete(reports);
+    await db.delete(attendance);
+    await db.delete(studentSubjects);
+    await db.delete(students);
   }
 
   if (action === "assign-student-subject") {
@@ -818,6 +829,14 @@ function mutateDemoData(action: string, payload: Record<string, unknown>, sessio
   if (action === "delete-student") {
     demoStore.data.students = demoStore.data.students.filter((student) => student.id !== payload.id);
     demoStore.data.studentSubjects = demoStore.data.studentSubjects.filter((item) => item.studentId !== payload.id);
+    demoStore.data.reports = demoStore.data.reports.filter((report) => report.studentId !== payload.id);
+    demoStore.data.attendance = demoStore.data.attendance.filter((record) => record.studentId !== payload.id);
+  }
+  if (action === "delete-all-students") {
+    demoStore.data.students = [];
+    demoStore.data.studentSubjects = [];
+    demoStore.data.reports = [];
+    demoStore.data.attendance = [];
   }
   if (action === "assign-student-subject") {
     const exists = demoStore.data.studentSubjects.some(

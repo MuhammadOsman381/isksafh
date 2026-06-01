@@ -54,6 +54,7 @@ function canRunAction(action: string, role: Role | null) {
     "create-student",
     "update-student",
     "delete-student",
+    "delete-all-students",
     "assign-student-subject",
     "update-student-subject",
     "delete-student-subject",

@@ -17,6 +17,7 @@ export function StudentsView({
   createStudent,
   updateStudent,
   deleteStudent,
+  deleteAllStudents,
   importStudents,
 }: {
   role: Role;
@@ -29,6 +30,7 @@ export function StudentsView({
   createStudent: FormHandler;
   updateStudent: (event: React.FormEvent<HTMLFormElement>, student: NewStudentForm) => Promise<boolean>;
   deleteStudent: (id: string) => void;
+  deleteAllStudents: () => void;
   importStudents: (event: React.FormEvent<HTMLFormElement>, year: string, file: File | null) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState<NewStudentForm | null>(null);
@@ -52,6 +54,13 @@ export function StudentsView({
     const imported = await importStudents(event, importYear, importFile);
     setImporting(false);
     if (imported) setImportFile(null);
+  }
+
+  function handleDeleteAllStudents() {
+    const confirmed = window.confirm(
+      "Delete all students and their marks, attendance, and subject assignments? This cannot be undone.",
+    );
+    if (confirmed) deleteAllStudents();
   }
 
   return (
@@ -108,7 +117,20 @@ export function StudentsView({
       )}
 
       <Panel title="All Students" subtitle={`${students.length} matching records`}>
-        <SearchBox value={query} onChange={setQuery} placeholder="Search by name, ID, or year" />
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="md:min-w-[320px] md:flex-1">
+            <SearchBox value={query} onChange={setQuery} placeholder="Search by name, ID, or year" />
+          </div>
+          {role === "admin" ? (
+            <button
+              type="button"
+              onClick={handleDeleteAllStudents}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100"
+            >
+              Delete all students
+            </button>
+          ) : null}
+        </div>
         <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
           <DataTable
             headers={["Student", "Year", role === "admin" ? "Actions" : "Status"]}

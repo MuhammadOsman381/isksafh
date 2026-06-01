@@ -454,6 +454,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
           createStudent={createStudent}
           updateStudent={updateStudent}
           deleteStudent={(id) => void mutate("delete-student", { id })}
+          deleteAllStudents={() => void mutate("delete-all-students", {})}
           importStudents={importStudents}
         />
       )}
