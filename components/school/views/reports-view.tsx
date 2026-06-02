@@ -5,7 +5,7 @@ import { Printer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { SchoolData } from "../types";
 
-type ReportStudent = {
+export type ReportStudent = {
   id: string;
   name: string;
   year: string;
@@ -127,7 +127,7 @@ export function ReportsView({ data }: { data: SchoolData }) {
   );
 }
 
-function ReportCards({
+export function ReportCards({
   reportTitle,
   students,
 }: {
@@ -284,7 +284,7 @@ function Signatures() {
   );
 }
 
-function buildReportStudents(data: SchoolData): ReportStudent[] {
+export function buildReportStudents(data: SchoolData): ReportStudent[] {
   return data.students.map((student) => {
     const assignedSubjects = data.studentSubjects
       .filter((assignment) => assignment.studentId === student.id)
