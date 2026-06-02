@@ -35,9 +35,10 @@ export function StudentsView({
 }) {
   const [editing, setEditing] = useState<NewStudentForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [importYear, setImportYear] = useState(years[0] ?? "Year 7");
+  const [importYear, setImportYear] = useState(years[0] ?? "");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const selectedImportYear = years.includes(importYear) ? importYear : years[0] ?? "";
 
   async function handleUpdateStudent(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,7 +52,7 @@ export function StudentsView({
   async function handleImportStudents(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setImporting(true);
-    const imported = await importStudents(event, importYear, importFile);
+    const imported = await importStudents(event, selectedImportYear, importFile);
     setImporting(false);
     if (imported) setImportFile(null);
   }
@@ -77,7 +78,7 @@ export function StudentsView({
           </Panel>
           <Panel title="Import Students" subtitle="Choose a year and upload Excel. Only first sheet Student# and Name are used">
             <form onSubmit={handleImportStudents} className="grid gap-3">
-              <SelectInput label="Year" value={importYear} options={ensureYears(years)} onChange={setImportYear} />
+              <SelectInput label="Year" value={selectedImportYear} options={ensureYears(years)} onChange={setImportYear} />
               <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
                 Excel file
                 <input

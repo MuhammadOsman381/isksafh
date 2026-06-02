@@ -140,13 +140,13 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
   const [newStudent, setNewStudent] = useState<NewStudentForm>({
     studentId: "",
     name: "",
-    year: "Year 7",
+    year: "",
     status: "active",
   });
   const [newYear, setNewYear] = useState<NewYearForm>({ name: "" });
   const [newSubject, setNewSubject] = useState<NewSubjectForm>({
     name: "",
-    year: "Year 7",
+    year: "",
   });
   const [newReport, setNewReport] = useState<NewReportForm>({
     studentId: "",
@@ -167,7 +167,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     teacherId: "",
     studentId: "",
     subjectId: "",
-    year: "Year 7",
+    year: "",
   });
 
   useEffect(() => {

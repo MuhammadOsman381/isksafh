@@ -26,7 +26,6 @@ export function LoginScreen({
     void onLogin(email, password);
   }
 
-
   return (
     <main className="min-h-screen bg-[#f7f7f4] text-zinc-950">
       <section className="mx-auto grid min-h-screen w-full max-w-7xl items-center gap-10 px-4 py-8 md:grid-cols-[1fr_1.1fr] md:px-8">

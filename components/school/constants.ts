@@ -46,7 +46,7 @@ export function pageTitle(tab: Tab) {
 }
 
 export function ensureYears(years: string[]) {
-  return years.length ? years : ["Year 7", "Year 8", "Year 9", "Year 10"];
+  return years;
 }
 
 export function option(value: string, label: string) {
