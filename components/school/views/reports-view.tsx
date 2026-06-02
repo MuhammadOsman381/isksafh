@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Printer } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { SchoolData } from "../types";
 
 export type ReportStudent = {
@@ -29,7 +29,6 @@ export function ReportsView({ data }: { data: SchoolData }) {
   const [reportTitle, setReportTitle] = useState("Student Report Card");
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
-  const [printStudents, setPrintStudents] = useState<ReportStudent[]>([]);
   const matchingStudents = students.filter((student) => {
     const normalized = studentSearch.toLowerCase().trim();
     if (!normalized) return true;
@@ -40,20 +39,9 @@ export function ReportsView({ data }: { data: SchoolData }) {
   });
   const selectedStudent = students.find((student) => student.id === selectedStudentId);
   const visibleStudents = selectedStudent ? [selectedStudent] : matchingStudents;
-  const isPreparingPrint = printStudents.length > 0;
-
-  useEffect(() => {
-    function cleanupPrintPages() {
-      setPrintStudents([]);
-    }
-
-    window.addEventListener("afterprint", cleanupPrintPages);
-    return () => window.removeEventListener("afterprint", cleanupPrintPages);
-  }, []);
 
   function downloadReports() {
-    setPrintStudents(visibleStudents);
-    window.setTimeout(() => window.print(), 80);
+    window.print();
   }
 
   return (
@@ -104,11 +92,11 @@ export function ReportsView({ data }: { data: SchoolData }) {
           </label>
           <button
             onClick={downloadReports}
-            disabled={isPreparingPrint || visibleStudents.length === 0}
+            disabled={visibleStudents.length === 0}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
             <Printer size={17} />
-            {isPreparingPrint ? "Preparing..." : selectedStudent ? "Download Single" : "Download"}
+            {selectedStudent ? "Download Single" : "Download"}
           </button>
         </div>
         <p className="mt-3 text-sm text-zinc-500">
@@ -118,11 +106,15 @@ export function ReportsView({ data }: { data: SchoolData }) {
         </p>
       </div>
 
-      {printStudents.length ? (
+      {visibleStudents.length ? (
         <div className="report-pages">
-          <ReportCards reportTitle={reportTitle || "Student Report Card"} students={printStudents} />
+          <ReportCards reportTitle={reportTitle || "Student Report Card"} students={visibleStudents} />
         </div>
-      ) : null}
+      ) : (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-500">
+          No reports found.
+        </div>
+      )}
     </div>
   );
 }
