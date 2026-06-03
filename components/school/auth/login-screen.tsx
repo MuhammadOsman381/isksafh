@@ -66,9 +66,12 @@ export function LoginScreen({
               <TextInput label="Email" value={email} onChange={setEmail} required type="email" />
               <TextInput label="Password" value={password} onChange={setPassword} required type="password" />
               {notice ? <p className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{notice}</p> : null}
-              <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300">
-                <ShieldCheck size={17} />
-                Login
+              <button
+                disabled={loading}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-wait disabled:opacity-70"
+              >
+                {loading ? <Loader2 className="animate-spin" size={17} /> : <ShieldCheck size={17} />}
+                {loading ? "Logging in..." : "Login"}
               </button>
             </form>
             <div className="mt-5 space-y-3">

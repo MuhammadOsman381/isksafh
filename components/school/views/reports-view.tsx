@@ -213,7 +213,7 @@ function ReportHeader() {
         <p className="text-sm font-bold">Formerly: The British International School of Tabuk</p>
         <p className="text-md">P.O. Box 100 Tabuk, Kingdom of Saudi Arabia</p>
         <p className="text-md">
-          Tel: (00966) (0) 14 4410088 x 81303 Email: admin@ist-tak.org
+          Tel: +966 (14) 4411088 x 83013 Email: admin@bis-tabuk.org
         </p>
       </div>
     </header>
@@ -268,8 +268,9 @@ function Signatures() {
           <p>School Principal</p>
         </div>
       </section>
-      <footer className="mt-2 flex flex-row justify-around text-center">
+      <footer className="mt-2 gap-1 flex flex-row justify-center text-center">
         <p>School Stamp</p>
+        &
         <p>Date</p>
       </footer>
     </>

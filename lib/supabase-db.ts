@@ -351,17 +351,19 @@ export async function seedDemoData() {
 
 export async function getAcademicYearNames(): Promise<string[]> {
   if (!db) {
-    return demoStore.data.years;
+    return sortAcademicYears(demoStore.data.years);
   }
 
   const rows = await db.select().from(academicYears).orderBy(asc(academicYears.name));
-  return rows.map((year) => year.name);
+  return sortAcademicYears(rows.map((year) => year.name));
 }
 
 export async function getSchoolData(options: { bypassCache?: boolean } = {}): Promise<SchoolData> {
   if (!db) {
     return {
       ...demoStore.data,
+      users: sortUsersByDisplayName(demoStore.data.users),
+      years: sortAcademicYears(demoStore.data.years),
       meta: { source: "demo", generatedAt: new Date().toISOString() },
     };
   }
@@ -388,31 +390,20 @@ export async function getSchoolData(options: { bypassCache?: boolean } = {}): Pr
 async function loadSchoolData(): Promise<SchoolData> {
   if (!db) throw new Error("Database is not configured");
 
-  const [
-    userRows,
-    studentRows,
-    subjectRows,
-    yearRows,
-    teacherSubjectRows,
-    studentSubjectRows,
-    reportRows,
-    attendanceRows,
-  ] = await Promise.all([
-    db.select().from(users).orderBy(desc(users.createdAt)),
-    db.select().from(students).orderBy(desc(students.createdAt)),
-    db.select().from(subjects).orderBy(asc(subjects.year), asc(subjects.name)),
-    db.select().from(academicYears).orderBy(asc(academicYears.name)),
-    db.select().from(teacherSubjects).orderBy(desc(teacherSubjects.createdAt)),
-    db.select().from(studentSubjects).orderBy(desc(studentSubjects.createdAt)),
-    db.select().from(reports).orderBy(desc(reports.createdAt)),
-    db.select().from(attendance).orderBy(desc(attendance.date), desc(attendance.createdAt)),
-  ]);
+  const userRows = await db.select().from(users).orderBy(desc(users.createdAt));
+  const studentRows = await db.select().from(students).orderBy(desc(students.createdAt));
+  const subjectRows = await db.select().from(subjects).orderBy(asc(subjects.year), asc(subjects.name));
+  const yearRows = await db.select().from(academicYears).orderBy(asc(academicYears.name));
+  const teacherSubjectRows = await db.select().from(teacherSubjects).orderBy(desc(teacherSubjects.createdAt));
+  const studentSubjectRows = await db.select().from(studentSubjects).orderBy(desc(studentSubjects.createdAt));
+  const reportRows = await db.select().from(reports).orderBy(desc(reports.createdAt));
+  const attendanceRows = await db.select().from(attendance).orderBy(desc(attendance.date), desc(attendance.createdAt));
 
   return {
-    users: userRows as SchoolData["users"],
+    users: sortUsersByDisplayName(userRows as SchoolData["users"]),
     students: studentRows as SchoolData["students"],
     subjects: subjectRows as SchoolData["subjects"],
-    years: yearRows.map((year) => year.name),
+    years: sortAcademicYears(yearRows.map((year) => year.name)),
     teacherSubjects: teacherSubjectRows as SchoolData["teacherSubjects"],
     studentSubjects: studentSubjectRows as SchoolData["studentSubjects"],
     reports: reportRows as SchoolData["reports"],
@@ -426,6 +417,52 @@ async function loadSchoolData(): Promise<SchoolData> {
     })),
     meta: { source: "supabase", generatedAt: new Date().toISOString() },
   };
+}
+
+function sortUsersByDisplayName(userRows: SchoolData["users"]) {
+  return [...userRows].sort((first, second) =>
+    compareText(stripNameTitle(first.name), stripNameTitle(second.name)) ||
+    compareText(first.name, second.name),
+  );
+}
+
+function stripNameTitle(name: string) {
+  return name.replace(/^(mr|ms)\.?\s+/i, "").trim();
+}
+
+function sortAcademicYears(yearRows: string[]) {
+  return [...yearRows].sort(compareAcademicYear);
+}
+
+function compareAcademicYear(first: string, second: string) {
+  const parsedFirst = parseAcademicYear(first);
+  const parsedSecond = parseAcademicYear(second);
+
+  if (parsedFirst.rank !== parsedSecond.rank) return parsedFirst.rank - parsedSecond.rank;
+  if (parsedFirst.number !== parsedSecond.number) return parsedFirst.number - parsedSecond.number;
+  return compareText(parsedFirst.section, parsedSecond.section) || compareText(first, second);
+}
+
+function parseAcademicYear(year: string) {
+  const normalized = year.trim();
+  if (/^reception$/i.test(normalized)) {
+    return { rank: 0, number: 0, section: "" };
+  }
+
+  const match = normalized.match(/^(?:year|yera)\s*0*(\d+)\s*([a-z]*)$/i);
+  if (match) {
+    return {
+      rank: 1,
+      number: Number(match[1]),
+      section: match[2].toUpperCase(),
+    };
+  }
+
+  return { rank: 2, number: Number.MAX_SAFE_INTEGER, section: normalized.toUpperCase() };
+}
+
+function compareText(first: string, second: string) {
+  return first.localeCompare(second, undefined, { numeric: true, sensitivity: "base" });
 }
 
 export async function mutateSchoolData(

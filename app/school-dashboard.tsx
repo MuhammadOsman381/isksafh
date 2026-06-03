@@ -58,6 +58,8 @@ let dashboardBootstrapPromise:
     }>
   | null = null;
 
+const REQUEST_TIMEOUT_MS = 7_000;
+
 function normalizeSchoolData(data: Partial<SchoolData> | null | undefined): SchoolData {
   return {
     users: Array.isArray(data?.users) ? data.users : [],
@@ -72,8 +74,18 @@ function normalizeSchoolData(data: Partial<SchoolData> | null | undefined): Scho
   };
 }
 
+async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 async function fetchSchoolData() {
-  const response = await fetch("/api/system", { cache: "no-store" });
+  const response = await fetchWithTimeout("/api/system", { cache: "no-store" });
   const payload = await response.json().catch(() => null) as (Partial<SchoolData> & { error?: string; detail?: string }) | null;
   if (!response.ok) {
     return {
@@ -87,13 +99,24 @@ async function fetchSchoolData() {
 function loadDashboardBootstrap() {
   if (dashboardBootstrapPromise) return dashboardBootstrapPromise;
 
-  const promise = Promise.all([
-    fetchSchoolData(),
-    fetch("/api/auth", { cache: "no-store", credentials: "same-origin" }).then(async (response) => {
+  const promise = fetchWithTimeout("/api/auth", { cache: "no-store", credentials: "same-origin" })
+    .then(async (response) => {
       if (!response.ok) return null;
       return (await response.json()) as { user: User | null };
-    }),
-  ]).then(([system, session]) => ({ schoolData: system.schoolData, session, error: system.error }));
+    })
+    .then(async (session) => {
+      if (!session?.user) return { schoolData: initialData, session };
+      const system = await fetchSchoolData().catch((error) => ({
+        schoolData: initialData,
+        error: error instanceof Error ? error.message : "Unable to load school data",
+      }));
+      return { schoolData: system.schoolData, session, error: system.error };
+    })
+    .catch((error) => ({
+      schoolData: initialData,
+      session: null,
+      error: error instanceof Error ? error.message : "Unable to load dashboard",
+    }));
 
   dashboardBootstrapPromise = promise;
   promise.finally(() => {
@@ -258,22 +281,30 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
   }
 
   async function login(email: string, password: string) {
-    const response = await fetch("/api/auth", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!response.ok) {
-      setNotice("Invalid login");
-      return;
+    setSaving(true);
+    try {
+      const response = await fetchWithTimeout("/api/auth", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: string; detail?: string } | null;
+        setNotice(payload?.detail ?? payload?.error ?? "Invalid login");
+        return;
+      }
+      const payload = (await response.json()) as { user: User };
+      dashboardBootstrapPromise = null;
+      setCurrentUser(payload.user);
+      setRole(payload.user.role);
+      setActiveTab(defaultTabs[payload.user.role]);
+      router.push(roleRoutes[payload.user.role]);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Login request timed out");
+    } finally {
+      setSaving(false);
     }
-    const payload = (await response.json()) as { user: User };
-    dashboardBootstrapPromise = null;
-    setCurrentUser(payload.user);
-    setRole(payload.user.role);
-    setActiveTab(defaultTabs[payload.user.role]);
-    router.push(roleRoutes[payload.user.role]);
   }
 
   async function logout() {
@@ -411,7 +442,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     return (
       <LoginScreen
         onLogin={login}
-        loading={loading || checkingSession}
+        loading={loading || checkingSession || saving}
         source={data.meta.source}
         notice={notice}
       />

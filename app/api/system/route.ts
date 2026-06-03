@@ -7,9 +7,20 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "local-school-
 
 export const dynamic = "force-dynamic";
 
+const SYSTEM_TIMEOUT_MS = 8_000;
+
+function withTimeout<T>(promise: Promise<T>, message: string) {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(message)), SYSTEM_TIMEOUT_MS);
+    }),
+  ]);
+}
+
 export async function GET() {
   try {
-    const data = await getSchoolData();
+    const data = await withTimeout(getSchoolData(), "School data request timed out");
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
@@ -29,7 +40,10 @@ export async function POST(request: NextRequest) {
     if (!canRunAction(String(body.action ?? ""), sessionUser?.role ?? null)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const data = await mutateSchoolData(body.action, body.payload ?? {}, sessionUser);
+    const data = await withTimeout(
+      mutateSchoolData(body.action, body.payload ?? {}, sessionUser),
+      "School update request timed out",
+    );
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
