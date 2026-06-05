@@ -54,6 +54,8 @@ export type AttendanceRecord = {
   studentId: string;
   date: string;
   status: "present" | "absent" | "authorised";
+  sessions: number;
+  attendances: number;
   authorisedAbsence: number;
   unauthorisedAbsence: number;
 };
@@ -195,6 +197,8 @@ export const demoData: SchoolData = {
       studentId: "s-1",
       date: "2026-05-26",
       status: "present",
+      sessions: 1,
+      attendances: 1,
       authorisedAbsence: 0,
       unauthorisedAbsence: 0,
     },
@@ -203,6 +207,8 @@ export const demoData: SchoolData = {
       studentId: "s-3",
       date: "2026-05-26",
       status: "authorised",
+      sessions: 1,
+      attendances: 0,
       authorisedAbsence: 1,
       unauthorisedAbsence: 0,
     },

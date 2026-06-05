@@ -47,8 +47,8 @@ export type NewReportForm = {
 
 export type NewAttendanceForm = {
   studentId: string;
-  date: string;
-  status: "present" | "absent" | "authorised";
+  sessions: string;
+  attendances: string;
   authorisedAbsence: string;
   unauthorisedAbsence: string;
 };

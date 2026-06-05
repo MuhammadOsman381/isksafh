@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { LoginScreen } from "@/components/school/auth/login-screen";
-import { today } from "@/components/school/constants";
 import { SchoolShell } from "@/components/school/layout/school-shell";
 import { AttendanceView } from "@/components/school/views/attendance-view";
 import { DashboardView } from "@/components/school/views/dashboard-view";
@@ -47,7 +46,7 @@ const roleRoutes: Record<Role, string> = {
 const defaultTabs: Record<Role, Tab> = {
   admin: "dashboard",
   teacher: "students",
-  attendent: "dashboard",
+  attendent: "students",
 };
 
 let dashboardBootstrapPromise:
@@ -181,8 +180,8 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
   });
   const [newAttendance, setNewAttendance] = useState<NewAttendanceForm>({
     studentId: "",
-    date: today,
-    status: "present",
+    sessions: "0",
+    attendances: "0",
     authorisedAbsence: "0",
     unauthorisedAbsence: "0",
   });
@@ -417,8 +416,8 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     void mutate("create-attendance", newAttendance);
     setNewAttendance({
       studentId: "",
-      date: today,
-      status: "present",
+      sessions: "0",
+      attendances: "0",
       authorisedAbsence: "0",
       unauthorisedAbsence: "0",
     });

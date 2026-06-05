@@ -18,14 +18,14 @@ export const tabs: Array<{ id: Tab; label: string; icon: typeof LayoutDashboard 
   { id: "teachers", label: "Users", icon: Users },
   { id: "subjects", label: "Subjects", icon: BookOpen },
   { id: "marks", label: "Marks", icon: Activity },
-  { id: "attendance", label: "Attendance", icon: CalendarCheck },
+  { id: "attendance", label: "Registrar", icon: CalendarCheck },
   { id: "reports", label: "Reports", icon: ShieldCheck },
 ];
 
 export const roleCopy: Record<Role, string> = {
   admin: "Full control over users, students, subjects, reports and setup.",
   teacher: "Enter marks, review assigned subjects, and track performance.",
-  attendent: "Record attendance and absence details for student cohorts.",
+  attendent: "Record registrar attendance totals for student reports.",
 };
 
 export const effortOptions = ["Excellent", "Good", "Satisfactory", "Needs Support"];
@@ -39,7 +39,7 @@ export function pageTitle(tab: Tab) {
     teachers: "User Management",
     subjects: "Subjects & Years",
     marks: "Marks Entry",
-    attendance: "Attendance Register",
+    attendance: "Registrar Entry",
     reports: "Report Cards",
   };
   return titles[tab];

@@ -1,7 +1,7 @@
 "use client";
 
 import { option } from "../constants";
-import { Badge, DataTable, Panel, PersonCell, PrimaryButton, SelectInput, TextInput } from "../ui";
+import { DataTable, Panel, PersonCell, PrimaryButton, SelectInput, TextInput } from "../ui";
 import type { FormHandler, NewAttendanceForm, SchoolData } from "../types";
 
 export function AttendanceView({
@@ -17,28 +17,28 @@ export function AttendanceView({
 }) {
   return (
     <div className="flex flex-col gap-6">
-      <Panel title="Record Attendance" subtitle="Daily register for authorised and unauthorised absence">
+      <Panel title="Registrar Entry" subtitle="Enter the attendance totals used in student reports">
         <form onSubmit={createAttendance} className="grid gap-3">
           <SelectInput label="Student" value={newAttendance.studentId} options={data.students.map((student) => option(student.id, `${student.name} · ${student.studentId}`))} onChange={(value) => setNewAttendance({ ...newAttendance, studentId: value })} />
-          <TextInput label="Date" value={newAttendance.date} onChange={(value) => setNewAttendance({ ...newAttendance, date: value })} required type="date" />
-          <SelectInput label="Status" value={newAttendance.status} options={["present", "absent", "authorised"]} onChange={(value) => setNewAttendance({ ...newAttendance, status: value as NewAttendanceForm["status"] })} />
           <div className="grid gap-3 md:grid-cols-2">
-            <TextInput label="Authorised absence" value={newAttendance.authorisedAbsence} onChange={(value) => setNewAttendance({ ...newAttendance, authorisedAbsence: value })} required type="number" min={0} />
-            <TextInput label="Unauthorised absence" value={newAttendance.unauthorisedAbsence} onChange={(value) => setNewAttendance({ ...newAttendance, unauthorisedAbsence: value })} required type="number" min={0} />
+            <TextInput label="Number of sessions" value={newAttendance.sessions} onChange={(value) => setNewAttendance({ ...newAttendance, sessions: value })} required type="number" min={0} />
+            <TextInput label="Number of attendances" value={newAttendance.attendances} onChange={(value) => setNewAttendance({ ...newAttendance, attendances: value })} required type="number" min={0} />
+            <TextInput label="Number of authorised absences" value={newAttendance.authorisedAbsence} onChange={(value) => setNewAttendance({ ...newAttendance, authorisedAbsence: value })} required type="number" min={0} />
+            <TextInput label="Number of unauthorised absences" value={newAttendance.unauthorisedAbsence} onChange={(value) => setNewAttendance({ ...newAttendance, unauthorisedAbsence: value })} required type="number" min={0} />
           </div>
-          <PrimaryButton label="Save attendance" />
+          <PrimaryButton label="Save registrar entry" />
         </form>
       </Panel>
 
-      <Panel title="Attendance Log" subtitle={`${data.attendance.length} records`}>
+      <Panel title="Registrar Log" subtitle={`${data.attendance.length} records`}>
         <DataTable
-          headers={["Student", "Date", "Status", "Authorised", "Unauthorised"]}
+          headers={["Student", "Sessions", "Attendances", "Authorised", "Unauthorised"]}
           rows={data.attendance.map((record) => {
             const student = data.students.find((item) => item.id === record.studentId);
             return [
               <PersonCell key="student" title={student?.name ?? "Unknown"} subtitle={student?.studentId ?? record.studentId} />,
-              record.date,
-              <Badge key="status" label={record.status} />,
+              record.sessions,
+              record.attendances,
               record.authorisedAbsence,
               record.unauthorisedAbsence,
             ];

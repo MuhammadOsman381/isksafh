@@ -15,6 +15,13 @@
       "when": 1780248118438,
       "tag": "0001_clean_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780687986136,
+      "tag": "0002_wakeful_beast",
+      "breakpoints": true
     }
   ]
 }

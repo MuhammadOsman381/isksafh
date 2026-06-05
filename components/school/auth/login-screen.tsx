@@ -39,7 +39,7 @@ export function LoginScreen({
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-zinc-600">
             A clean school operations dashboard for administrators, teachers,
-            and attendance staff with Supabase-ready storage and animated workflows.
+            and registrar staff with Supabase-ready storage and animated workflows.
           </p>
           <div className="mt-8 grid max-w-xl grid-cols-3 gap-3">
             <Metric label="Teachers" value="50" tone="emerald" />

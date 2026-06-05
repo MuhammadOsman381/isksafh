@@ -35,7 +35,7 @@ export function SchoolShell({
   const visibleTabs = tabs.filter((tab) => {
     if (role === "admin") return !["marks", "attendance"].includes(tab.id);
     if (role === "teacher") return ["students", "marks"].includes(tab.id);
-    if (role === "attendent") return ["dashboard", "students", "attendance"].includes(tab.id);
+    if (role === "attendent") return ["students", "attendance"].includes(tab.id);
     return true;
   });
 
@@ -105,7 +105,9 @@ export function SchoolShell({
           <div className="mt-7 rounded-xl border border-white/10 bg-white/[0.06] p-4">
             <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Signed in</p>
             <p className="mt-2 font-semibold">{currentUser?.name ?? role}</p>
-            <p className="mt-1 text-sm capitalize text-zinc-400">{role} portal</p>
+            <p className="mt-1 text-sm capitalize text-zinc-400">
+              {role === "attendent" ? "Registrar" : role} portal
+            </p>
           </div>
 
           <nav className="mt-6 space-y-1">

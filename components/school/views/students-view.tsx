@@ -64,6 +64,25 @@ export function StudentsView({
     if (confirmed) deleteAllStudents();
   }
 
+  function downloadStudentsExcel() {
+    const rows = [
+      ["Student ID", "Name", "Year"],
+      ...students.map((student) => [student.studentId, student.name, student.year]),
+    ];
+    const content = rows
+      .map((row) => row.map((cell) => String(cell).replace(/\t|\r?\n/g, " ")).join("\t"))
+      .join("\n");
+    const blob = new Blob([content], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "students.xls";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {role === "admin" ? (
@@ -123,13 +142,23 @@ export function StudentsView({
             <SearchBox value={query} onChange={setQuery} placeholder="Search by name, ID, or year" />
           </div>
           {role === "admin" ? (
-            <button
-              type="button"
-              onClick={handleDeleteAllStudents}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100"
-            >
-              Delete all students
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={downloadStudentsExcel}
+                disabled={students.length === 0}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Download Excel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAllStudents}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100"
+              >
+                Delete all students
+              </button>
+            </div>
           ) : null}
         </div>
         <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">

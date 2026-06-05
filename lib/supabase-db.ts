@@ -363,6 +363,7 @@ export async function getSchoolData(options: { bypassCache?: boolean } = {}): Pr
     return {
       ...demoStore.data,
       users: sortUsersByDisplayName(demoStore.data.users),
+      students: sortStudentsByAcademicYear(demoStore.data.students),
       years: sortAcademicYears(demoStore.data.years),
       meta: { source: "demo", generatedAt: new Date().toISOString() },
     };
@@ -401,7 +402,7 @@ async function loadSchoolData(): Promise<SchoolData> {
 
   return {
     users: sortUsersByDisplayName(userRows as SchoolData["users"]),
-    students: studentRows as SchoolData["students"],
+    students: sortStudentsByAcademicYear(studentRows as SchoolData["students"]),
     subjects: subjectRows as SchoolData["subjects"],
     years: sortAcademicYears(yearRows.map((year) => year.name)),
     teacherSubjects: teacherSubjectRows as SchoolData["teacherSubjects"],
@@ -412,6 +413,8 @@ async function loadSchoolData(): Promise<SchoolData> {
       studentId: record.studentId,
       date: String(record.date),
       status: record.status as SchoolData["attendance"][number]["status"],
+      sessions: record.sessions,
+      attendances: record.attendances,
       authorisedAbsence: record.authorisedAbsence,
       unauthorisedAbsence: record.unauthorisedAbsence,
     })),
@@ -423,6 +426,14 @@ function sortUsersByDisplayName(userRows: SchoolData["users"]) {
   return [...userRows].sort((first, second) =>
     compareText(stripNameTitle(first.name), stripNameTitle(second.name)) ||
     compareText(first.name, second.name),
+  );
+}
+
+function sortStudentsByAcademicYear(studentRows: SchoolData["students"]) {
+  return [...studentRows].sort((first, second) =>
+    compareAcademicYear(first.year, second.year) ||
+    compareText(first.name, second.name) ||
+    compareText(first.studentId, second.studentId),
   );
 }
 
@@ -687,6 +698,8 @@ export async function mutateSchoolData(
       studentId: String(payload.studentId ?? ""),
       date: String(payload.date ?? new Date().toISOString().slice(0, 10)),
       status: String(payload.status ?? "present"),
+      sessions: Number(payload.sessions || 0),
+      attendances: Number(payload.attendances || 0),
       authorisedAbsence: Number(payload.authorisedAbsence || 0),
       unauthorisedAbsence: Number(payload.unauthorisedAbsence || 0),
     });
@@ -1062,6 +1075,8 @@ function mutateDemoData(action: string, payload: Record<string, unknown>, sessio
       studentId: String(payload.studentId ?? ""),
       date: String(payload.date ?? new Date().toISOString().slice(0, 10)),
       status: payload.status === "absent" || payload.status === "authorised" ? payload.status : "present",
+      sessions: Number(payload.sessions ?? 0),
+      attendances: Number(payload.attendances ?? 0),
       authorisedAbsence: Number(payload.authorisedAbsence ?? 0),
       unauthorisedAbsence: Number(payload.unauthorisedAbsence ?? 0),
     });

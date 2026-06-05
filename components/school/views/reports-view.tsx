@@ -316,6 +316,8 @@ export function buildReportStudents(data: SchoolData): ReportStudent[] {
     });
 
     const records = data.attendance.filter((record) => record.studentId === student.id);
+    const sessions = records.reduce((sum, record) => sum + Number(record.sessions || 0), 0);
+    const attendenceTotal = records.reduce((sum, record) => sum + Number(record.attendances || 0), 0);
     const authoriseAbsence = records.reduce(
       (sum, record) => sum + Number(record.authorisedAbsence || 0),
       0,
@@ -324,7 +326,6 @@ export function buildReportStudents(data: SchoolData): ReportStudent[] {
       (sum, record) => sum + Number(record.unauthorisedAbsence || 0),
       0,
     );
-    const attendence = records.filter((record) => record.status === "present").length;
 
     return {
       id: student.id,
@@ -333,8 +334,8 @@ export function buildReportStudents(data: SchoolData): ReportStudent[] {
       studentID: student.studentId,
       subjects,
       attendance: {
-        sessions: records.length,
-        attendence,
+        sessions: sessions || records.length,
+        attendence: attendenceTotal || records.filter((record) => record.status === "present").length,
         authoriseAbsence,
         unAuthoriseAbsence,
       },

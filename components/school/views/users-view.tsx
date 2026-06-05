@@ -20,16 +20,21 @@ export function UsersView({
   deleteUser: (id: string) => void;
 }) {
   const [editing, setEditing] = useState<NewUserForm | null>(null);
+  const roleOptions = [
+    { value: "admin", label: "admin" },
+    { value: "teacher", label: "teacher" },
+    { value: "attendent", label: "Registrar" },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-5 ">
-        <Panel title="Create User" subtitle="Add admin, teacher, or attendance staff">
+        <Panel title="Create User" subtitle="Add admin, teacher, or registrar staff">
           <form onSubmit={createUser} className="grid gap-3">
             <TextInput label="Name" value={newUser.name} onChange={(value) => setNewUser({ ...newUser, name: value })} required />
             <TextInput label="Email" value={newUser.email} onChange={(value) => setNewUser({ ...newUser, email: value })} required type="email" />
             <TextInput label="Password" value={newUser.password} onChange={(value) => setNewUser({ ...newUser, password: value })} required />
-            <SelectInput label="Role" value={newUser.role} options={["admin", "teacher", "attendent"]} onChange={(value) => setNewUser({ ...newUser, role: value as Role })} />
+            <SelectInput label="Role" value={newUser.role} options={roleOptions} onChange={(value) => setNewUser({ ...newUser, role: value as Role })} />
             <SelectInput label="Status" value={newUser.status} options={["active", "blocked"]} onChange={(value) => setNewUser({ ...newUser, status: value as NewUserForm["status"] })} />
             <PrimaryButton label="Create user" />
           </form>
@@ -40,7 +45,7 @@ export function UsersView({
               <TextInput label="Name" value={editing.name} onChange={(value) => setEditing({ ...editing, name: value })} required />
               <TextInput label="Email" value={editing.email} onChange={(value) => setEditing({ ...editing, email: value })} required type="email" />
               <TextInput label="Password" value={editing.password} onChange={(value) => setEditing({ ...editing, password: value })} required />
-              <SelectInput label="Role" value={editing.role} options={["admin", "teacher", "attendent"]} onChange={(value) => setEditing({ ...editing, role: value as Role })} />
+              <SelectInput label="Role" value={editing.role} options={roleOptions} onChange={(value) => setEditing({ ...editing, role: value as Role })} />
               <SelectInput label="Status" value={editing.status} options={["active", "blocked"]} onChange={(value) => setEditing({ ...editing, status: value as NewUserForm["status"] })} />
               <div className="grid gap-2 md:grid-cols-2">
                 <PrimaryButton label="Save user" />
@@ -58,7 +63,7 @@ export function UsersView({
           headers={["Name", "Role", "Email", "Password", "Status", "Actions"]}
           rows={users.map((user) => [
             <PersonCell key="name" title={user.name} subtitle={user.id} />,
-            <Badge key="role" label={user.role} />,
+            <Badge key="role" label={user.role === "attendent" ? "Registrar" : user.role} />,
             user.email,
             user.password,
             <Badge key="status" label={user.status} />,
