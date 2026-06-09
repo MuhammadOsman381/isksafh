@@ -693,16 +693,33 @@ export async function mutateSchoolData(
   }
 
   if (action === "create-attendance") {
+    const studentId = String(payload.studentId ?? "");
+    const attendances = Number(payload.attendances || 0);
+    const authorisedAbsence = Number(payload.authorisedAbsence || 0);
+    const unauthorisedAbsence = Number(payload.unauthorisedAbsence || 0);
+    const sessions = attendances + authorisedAbsence + unauthorisedAbsence;
+
+    await db.delete(attendance).where(eq(attendance.studentId, studentId));
     await db.insert(attendance).values({
       id,
-      studentId: String(payload.studentId ?? ""),
+      studentId,
       date: String(payload.date ?? new Date().toISOString().slice(0, 10)),
       status: String(payload.status ?? "present"),
-      sessions: Number(payload.sessions || 0),
-      attendances: Number(payload.attendances || 0),
-      authorisedAbsence: Number(payload.authorisedAbsence || 0),
-      unauthorisedAbsence: Number(payload.unauthorisedAbsence || 0),
+      sessions,
+      attendances,
+      authorisedAbsence,
+      unauthorisedAbsence,
     });
+  }
+
+  if (action === "delete-attendance") {
+    const attendanceId = String(payload.id ?? "");
+    const studentId = String(payload.studentId ?? "");
+    if (attendanceId) {
+      await db.delete(attendance).where(eq(attendance.id, attendanceId));
+    } else if (studentId) {
+      await db.delete(attendance).where(eq(attendance.studentId, studentId));
+    }
   }
 
   clearSchoolDataCache();
@@ -1070,15 +1087,30 @@ function mutateDemoData(action: string, payload: Record<string, unknown>, sessio
     }
   }
   if (action === "create-attendance") {
+    const studentId = String(payload.studentId ?? "");
+    const attendances = Number(payload.attendances ?? 0);
+    const authorisedAbsence = Number(payload.authorisedAbsence ?? 0);
+    const unauthorisedAbsence = Number(payload.unauthorisedAbsence ?? 0);
+    const sessions = attendances + authorisedAbsence + unauthorisedAbsence;
+    demoStore.data.attendance = demoStore.data.attendance.filter((record) => record.studentId !== studentId);
     demoStore.data.attendance.unshift({
       id,
-      studentId: String(payload.studentId ?? ""),
+      studentId,
       date: String(payload.date ?? new Date().toISOString().slice(0, 10)),
       status: payload.status === "absent" || payload.status === "authorised" ? payload.status : "present",
-      sessions: Number(payload.sessions ?? 0),
-      attendances: Number(payload.attendances ?? 0),
-      authorisedAbsence: Number(payload.authorisedAbsence ?? 0),
-      unauthorisedAbsence: Number(payload.unauthorisedAbsence ?? 0),
+      sessions,
+      attendances,
+      authorisedAbsence,
+      unauthorisedAbsence,
+    });
+  }
+  if (action === "delete-attendance") {
+    const attendanceId = String(payload.id ?? "");
+    const studentId = String(payload.studentId ?? "");
+    demoStore.data.attendance = demoStore.data.attendance.filter((record) => {
+      if (attendanceId) return record.id !== attendanceId;
+      if (studentId) return record.studentId !== studentId;
+      return true;
     });
   }
 }

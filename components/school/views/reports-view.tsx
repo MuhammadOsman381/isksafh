@@ -299,7 +299,9 @@ export function buildReportStudents(data: SchoolData): ReportStudent[] {
         ? yearSubjects
         : reportSubjects;
 
-    const subjects = subjectsForReport.map((subject) => {
+    const subjects = [...subjectsForReport].sort((first, second) =>
+      first.name.localeCompare(second.name, undefined, { sensitivity: "base", numeric: true }),
+    ).map((subject) => {
       const report = data.reports.find(
         (item) => item.studentId === student.id && item.subjectId === subject.id,
       );
@@ -316,16 +318,13 @@ export function buildReportStudents(data: SchoolData): ReportStudent[] {
     });
 
     const records = data.attendance.filter((record) => record.studentId === student.id);
-    const sessions = records.reduce((sum, record) => sum + Number(record.sessions || 0), 0);
-    const attendenceTotal = records.reduce((sum, record) => sum + Number(record.attendances || 0), 0);
-    const authoriseAbsence = records.reduce(
-      (sum, record) => sum + Number(record.authorisedAbsence || 0),
-      0,
-    );
-    const unAuthoriseAbsence = records.reduce(
-      (sum, record) => sum + Number(record.unauthorisedAbsence || 0),
-      0,
-    );
+    const latestRecord = records[0];
+    const authoriseAbsence = Number(latestRecord?.authorisedAbsence || 0);
+    const unAuthoriseAbsence = Number(latestRecord?.unauthorisedAbsence || 0);
+    const attendenceTotal = Number(latestRecord?.attendances || 0);
+    const sessions = latestRecord
+      ? Number(latestRecord.sessions || attendenceTotal + authoriseAbsence + unAuthoriseAbsence)
+      : 0;
 
     return {
       id: student.id,
@@ -334,8 +333,8 @@ export function buildReportStudents(data: SchoolData): ReportStudent[] {
       studentID: student.studentId,
       subjects,
       attendance: {
-        sessions: sessions || records.length,
-        attendence: attendenceTotal || records.filter((record) => record.status === "present").length,
+        sessions,
+        attendence: latestRecord ? attendenceTotal : records.filter((record) => record.status === "present").length,
         authoriseAbsence,
         unAuthoriseAbsence,
       },

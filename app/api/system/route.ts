@@ -80,6 +80,7 @@ function canRunAction(action: string, role: Role | null) {
   if (adminOnly.has(action)) return role === "admin";
   if (action === "create-report") return role === "admin" || role === "teacher";
   if (action === "create-attendance") return role === "admin" || role === "attendent";
+  if (action === "delete-attendance") return role === "admin" || role === "attendent";
   return role !== null;
 }
 

@@ -180,7 +180,6 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
   });
   const [newAttendance, setNewAttendance] = useState<NewAttendanceForm>({
     studentId: "",
-    sessions: "0",
     attendances: "0",
     authorisedAbsence: "0",
     unauthorisedAbsence: "0",
@@ -416,11 +415,14 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
     void mutate("create-attendance", newAttendance);
     setNewAttendance({
       studentId: "",
-      sessions: "0",
       attendances: "0",
       authorisedAbsence: "0",
       unauthorisedAbsence: "0",
     });
+  }
+
+  function deleteAttendance(id: string, studentId: string) {
+    void mutate("delete-attendance", { id, studentId });
   }
 
   function assignTeacherSubject(event: FormEvent<HTMLFormElement>) {
@@ -533,6 +535,7 @@ export default function SchoolDashboard({ expectedRole }: { expectedRole?: Role 
           newAttendance={newAttendance}
           setNewAttendance={setNewAttendance}
           createAttendance={createAttendance}
+          deleteAttendance={deleteAttendance}
         />
       )}
       {activeTab === "reports" && <ReportsView data={data} />}

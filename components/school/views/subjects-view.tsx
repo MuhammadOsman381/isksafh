@@ -42,6 +42,18 @@ export function SubjectsView({
 }) {
   const teachers = data.users.filter((user) => user.role === "teacher" && user.status === "active");
   const [editingAssignment, setEditingAssignment] = useState<AssignmentForm | null>(null);
+  const sortedTeacherAssignments = [...data.teacherSubjects].sort((first, second) => {
+    const firstTeacher = data.users.find((user) => user.id === first.teacherId);
+    const secondTeacher = data.users.find((user) => user.id === second.teacherId);
+    const firstSubject = data.subjects.find((subject) => subject.id === first.subjectId);
+    const secondSubject = data.subjects.find((subject) => subject.id === second.subjectId);
+
+    return (
+      compareAcademicYear(first.year, second.year) ||
+      compareText(stripNameTitle(firstTeacher?.name ?? ""), stripNameTitle(secondTeacher?.name ?? "")) ||
+      compareText(firstSubject?.name ?? "", secondSubject?.name ?? "")
+    );
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -118,7 +130,7 @@ export function SubjectsView({
         <Panel title="Teacher Assignments" subtitle={`${data.teacherSubjects.length} assignments`}>
           <DataTable
             headers={["Teacher", "Year", "Subject", "Actions"]}
-            rows={data.teacherSubjects.map((item) => {
+            rows={sortedTeacherAssignments.map((item) => {
               const teacher = data.users.find((user) => user.id === item.teacherId);
               const subject = data.subjects.find((subjectItem) => subjectItem.id === item.subjectId);
               return [
@@ -142,4 +154,39 @@ export function SubjectsView({
       </div>
     </div>
   );
+}
+
+function compareAcademicYear(first: string, second: string) {
+  const parsedFirst = parseAcademicYear(first);
+  const parsedSecond = parseAcademicYear(second);
+
+  if (parsedFirst.rank !== parsedSecond.rank) return parsedFirst.rank - parsedSecond.rank;
+  if (parsedFirst.number !== parsedSecond.number) return parsedFirst.number - parsedSecond.number;
+  return compareText(parsedFirst.section, parsedSecond.section) || compareText(first, second);
+}
+
+function parseAcademicYear(year: string) {
+  const normalized = year.trim();
+  if (/^reception$/i.test(normalized)) {
+    return { rank: 0, number: 0, section: "" };
+  }
+
+  const match = normalized.match(/^(?:year|yera)?\s*0*(\d+)\s*([a-z]*)$/i);
+  if (match) {
+    return {
+      rank: 1,
+      number: Number(match[1]),
+      section: match[2].toUpperCase(),
+    };
+  }
+
+  return { rank: 2, number: Number.MAX_SAFE_INTEGER, section: normalized.toUpperCase() };
+}
+
+function stripNameTitle(name: string) {
+  return name.replace(/^(mr|ms)\.?\s+/i, "").trim();
+}
+
+function compareText(first: string, second: string) {
+  return first.localeCompare(second, undefined, { numeric: true, sensitivity: "base" });
 }
