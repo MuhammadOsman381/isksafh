@@ -12,18 +12,21 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "seed:students": "node scripts/seed-random-students.mjs"
   },
   "engines": {
     "node": "20.x"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^149.0.0",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.40.0",
     "jose": "^6.2.3",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "postgres": "^3.4.9",
+    "puppeteer-core": "^25.1.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "xlsx": "^0.18.5"
