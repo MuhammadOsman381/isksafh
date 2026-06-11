@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/postgres-js";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 import postgres from "postgres";
 import { demoData, SchoolData, User } from "./demo-data";
 import { academicYears, attendance, reports, studentSubjects, students, subjects, teacherSubjects, users } from "./db/schema";
@@ -55,9 +55,45 @@ let schoolDataCache:
   | null = null;
 
 const SCHOOL_DATA_CACHE_MS = process.env.NODE_ENV === "production" ? 10_000 : 750;
+let teacherSubjectConstraintReady = false;
 
 function clearSchoolDataCache() {
   schoolDataCache = null;
+}
+
+async function ensureTeacherSubjectConstraint() {
+  if (!client || teacherSubjectConstraintReady) return;
+
+  await client`
+    ALTER TABLE teacher_subjects
+    DROP CONSTRAINT IF EXISTS teacher_subjects_teacher_id_subject_id_key
+  `;
+
+  const duplicates = await client`
+    SELECT year, subject_id
+    FROM teacher_subjects
+    GROUP BY year, subject_id
+    HAVING COUNT(*) > 1
+    LIMIT 1
+  `;
+
+  if (!duplicates.length) {
+    await client`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'teacher_subjects_year_subject_id_key'
+        ) THEN
+          ALTER TABLE teacher_subjects
+            ADD CONSTRAINT teacher_subjects_year_subject_id_key UNIQUE (year, subject_id);
+        END IF;
+      END $$;
+    `;
+  }
+
+  teacherSubjectConstraintReady = true;
 }
 
 async function ensureUsersTable() {
@@ -445,6 +481,22 @@ function sortAcademicYears(yearRows: string[]) {
   return [...yearRows].sort(compareAcademicYear);
 }
 
+function normalizeTeacherSubjectConstraintError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (message.includes("teacher_subjects_teacher_id_subject_id_key")) {
+    return new Error(
+      "Database still has the old teacher + subject unique rule. Run npm run db:fix-teacher-subjects with SUPABASE_DATABASE_URL, then try again.",
+    );
+  }
+
+  if (message.includes("teacher_subjects_year_subject_id_key")) {
+    return new Error("This subject is already assigned for this year");
+  }
+
+  return error instanceof Error ? error : new Error(message);
+}
+
 function compareAcademicYear(first: string, second: string) {
   const parsedFirst = parseAcademicYear(first);
   const parsedSecond = parseAcademicYear(second);
@@ -632,22 +684,61 @@ export async function mutateSchoolData(
   }
 
   if (action === "assign-subject") {
-    await db.insert(teacherSubjects).values({
-      id,
-      teacherId: String(payload.teacherId ?? ""),
-      subjectId: String(payload.subjectId ?? ""),
-      year: String(payload.year ?? ""),
-    }).onConflictDoNothing();
+    await ensureTeacherSubjectConstraint();
+
+    const subjectId = String(payload.subjectId ?? "");
+    const year = String(payload.year ?? "");
+    const existing = await db.select({ id: teacherSubjects.id })
+      .from(teacherSubjects)
+      .where(and(eq(teacherSubjects.year, year), eq(teacherSubjects.subjectId, subjectId)))
+      .limit(1);
+
+    if (existing.length) {
+      throw new Error("This subject is already assigned for this year");
+    }
+
+    try {
+      await db.insert(teacherSubjects).values({
+        id,
+        teacherId: String(payload.teacherId ?? ""),
+        subjectId,
+        year,
+      });
+    } catch (error) {
+      throw normalizeTeacherSubjectConstraintError(error);
+    }
   }
 
   if (action === "update-teacher-assignment") {
-    await db.update(teacherSubjects)
-      .set({
-        teacherId: String(payload.teacherId ?? ""),
-        subjectId: String(payload.subjectId ?? ""),
-        year: String(payload.year ?? ""),
-      })
-      .where(eq(teacherSubjects.id, String(payload.id)));
+    await ensureTeacherSubjectConstraint();
+
+    const assignmentId = String(payload.id ?? "");
+    const subjectId = String(payload.subjectId ?? "");
+    const year = String(payload.year ?? "");
+    const existing = await db.select({ id: teacherSubjects.id })
+      .from(teacherSubjects)
+      .where(and(
+        eq(teacherSubjects.year, year),
+        eq(teacherSubjects.subjectId, subjectId),
+        ne(teacherSubjects.id, assignmentId),
+      ))
+      .limit(1);
+
+    if (existing.length) {
+      throw new Error("This subject is already assigned for this year");
+    }
+
+    try {
+      await db.update(teacherSubjects)
+        .set({
+          teacherId: String(payload.teacherId ?? ""),
+          subjectId,
+          year,
+        })
+        .where(eq(teacherSubjects.id, assignmentId));
+    } catch (error) {
+      throw normalizeTeacherSubjectConstraintError(error);
+    }
   }
 
   if (action === "delete-teacher-assignment") {
@@ -1026,21 +1117,42 @@ function mutateDemoData(action: string, payload: Record<string, unknown>, sessio
     demoStore.data.studentSubjects = demoStore.data.studentSubjects.filter((item) => item.id !== payload.id);
   }
   if (action === "assign-subject") {
+    const subjectId = String(payload.subjectId ?? "");
+    const year = String(payload.year ?? "");
+    const existing = demoStore.data.teacherSubjects.find(
+      (item) => item.year === year && item.subjectId === subjectId,
+    );
+
+    if (existing) {
+      throw new Error("This subject is already assigned for this year");
+    }
+
     demoStore.data.teacherSubjects.unshift({
       id,
       teacherId: String(payload.teacherId ?? ""),
-      subjectId: String(payload.subjectId ?? ""),
-      year: String(payload.year ?? ""),
+      subjectId,
+      year,
     });
   }
   if (action === "update-teacher-assignment") {
+    const assignmentId = String(payload.id ?? "");
+    const subjectId = String(payload.subjectId ?? "");
+    const year = String(payload.year ?? "");
+    const existing = demoStore.data.teacherSubjects.find(
+      (item) => item.id !== assignmentId && item.year === year && item.subjectId === subjectId,
+    );
+
+    if (existing) {
+      throw new Error("This subject is already assigned for this year");
+    }
+
     demoStore.data.teacherSubjects = demoStore.data.teacherSubjects.map((item) =>
       item.id === payload.id
         ? {
             ...item,
             teacherId: String(payload.teacherId ?? item.teacherId),
-            subjectId: String(payload.subjectId ?? item.subjectId),
-            year: String(payload.year ?? item.year),
+            subjectId,
+            year,
           }
         : item,
     );

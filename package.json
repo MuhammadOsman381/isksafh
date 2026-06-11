@@ -13,6 +13,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:fix-teacher-subjects": "node scripts/fix-teacher-subject-constraint.mjs",
     "seed:students": "node scripts/seed-random-students.mjs"
   },
   "engines": {

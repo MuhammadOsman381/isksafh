@@ -68,7 +68,7 @@ export const teacherSubjects = pgTable("teacher_subjects", {
   subjectIdx: index("teacher_subjects_subject_id_idx").on(table.subjectId),
   yearIdx: index("teacher_subjects_year_idx").on(table.year),
   createdAtIdx: index("teacher_subjects_created_at_idx").on(table.createdAt),
-  teacherSubjectUnique: unique("teacher_subjects_teacher_id_subject_id_key").on(table.teacherId, table.subjectId),
+  yearSubjectUnique: unique("teacher_subjects_year_subject_id_key").on(table.year, table.subjectId),
 }));
 
 export const studentSubjects = pgTable("student_subjects", {

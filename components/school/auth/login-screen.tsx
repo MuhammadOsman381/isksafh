@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, CalendarCheck, Database, Loader2, ShieldCheck, Sparkles, UserRoundCheck } from "lucide-react";
+import { BookOpen, CalendarCheck, Database, Eye, EyeOff, Loader2, ShieldCheck, Sparkles, UserRoundCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { FormEvent, useState } from "react";
 import { roleCopy } from "../constants";
@@ -20,6 +20,7 @@ export function LoginScreen({
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,7 +65,26 @@ export function LoginScreen({
             </div>
             <form onSubmit={submitLogin} className="mt-6 grid gap-3">
               <TextInput label="Email" value={email} onChange={setEmail} required type="email" />
-              <TextInput label="Password" value={password} onChange={setPassword} required type="password" />
+              <label className="grid gap-1.5 text-sm font-medium text-zinc-200">
+                Password
+                <div className="flex h-11 items-center rounded-xl border border-white/10 bg-white/[0.06] pr-2 transition focus-within:border-emerald-300/50">
+                  <input
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                    type={showPassword ? "text" : "password"}
+                    className="h-full min-w-0 flex-1 bg-transparent px-3 text-white outline-none placeholder:text-zinc-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-300 transition hover:bg-white/10 hover:text-white"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+              </label>
               {notice ? <p className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{notice}</p> : null}
               <button
                 disabled={loading}

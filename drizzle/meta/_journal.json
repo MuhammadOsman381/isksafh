@@ -22,6 +22,13 @@
       "when": 1780687986136,
       "tag": "0002_wakeful_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781186400000,
+      "tag": "0003_teacher_subject_year_subject_unique",
+      "breakpoints": true
     }
   ]
 }
