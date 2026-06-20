@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "tudent Management System",
+  title: "student Management System",
   description: "Premium Next.js school management dashboard backed by Supabase.",
 };
 
