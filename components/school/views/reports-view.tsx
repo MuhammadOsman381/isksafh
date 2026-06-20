@@ -120,12 +120,15 @@ export function ReportsView({ data }: { data: SchoolData }) {
         </p>
       </div>
 
-      {/* Report preview rendering is disabled. PDFs are generated server-side when Download is clicked. */}
-      {!visibleStudents.length ? (
+      {visibleStudents.length ? (
+        <div className="report-pages">
+          <ReportCards reportTitle={reportTitle || "Student Report Card"} students={visibleStudents} />
+        </div>
+      ) : (
         <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-500">
           No reports found.
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -212,7 +215,7 @@ function ReportHeader() {
   return (
     <header className="flex items-center justify-start gap-3 p-0">
       <div className="flex w-[95px] shrink-0 items-center justify-center">
-        <Image src="/school-logo.jpeg" alt="School Logo" width={95} height={95} className="h-auto w-full " />
+        <Image src="/school-logo.jpeg" alt="School Logo" width={95} height={95} className="h-auto w-full" />
       </div>
       <div className="flex-1 text-center">
         <h1 className="text-xl font-bold">

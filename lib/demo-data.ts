@@ -80,7 +80,7 @@ export const demoData: SchoolData = {
     {
       id: "u-admin",
       name: "Admin Office",
-      email: "admin@isksafh.school",
+      email: "admin@school.test",
       password: "admin123",
       role: "admin",
       status: "active",
@@ -88,7 +88,7 @@ export const demoData: SchoolData = {
     {
       id: "u-teacher-1",
       name: "Ayesha Khan",
-      email: "ayesha@isksafh.school",
+      email: "ayesha@school.test",
       password: "teacher123",
       role: "teacher",
       status: "active",
@@ -96,7 +96,7 @@ export const demoData: SchoolData = {
     {
       id: "u-teacher-2",
       name: "Omar Malik",
-      email: "omar@isksafh.school",
+      email: "omar@school.test",
       password: "teacher123",
       role: "teacher",
       status: "active",
@@ -104,7 +104,7 @@ export const demoData: SchoolData = {
     {
       id: "u-attendent",
       name: "Attendance Desk",
-      email: "attendance@isksafh.school",
+      email: "attendance@school.test",
       password: "attend123",
       role: "attendent",
       status: "active",

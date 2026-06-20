@@ -1,12 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, Database, Loader2, LogOut, Menu, Sparkles, X } from "lucide-react";
+import { ChevronRight, Database, GraduationCap, Loader2, LogOut, Menu, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { pageTitle, tabs } from "../constants";
 import { LoadingState, StatusPill } from "../ui";
 import type { Role, Tab, User } from "../types";
-import Image from "next/image";
 
 export function SchoolShell({
   role,
@@ -52,7 +51,7 @@ export function SchoolShell({
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           <div className="text-center">
-            <p className="text-xs font-medium text-zinc-500">ISKSAFH</p>
+            <p className="text-xs font-medium text-zinc-500">School Portal</p>
             {/* <p className="text-sm font-semibold text-zinc-950">School OS</p> */}
           </div>
           <button
@@ -79,15 +78,11 @@ export function SchoolShell({
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-xl  shadow">
-                {/* <GraduationCap size={24} />
-                 */}
-                <Image
-                  src="/logo.jpeg"
-                  alt="Logo" width={55} height={55} className="rounded-full" />
+              <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-400 text-zinc-950 shadow">
+                <GraduationCap size={25} aria-hidden="true" />
               </div>
               <div>
-                <h1 className=" font-semibold text-lg">ISKSAFH</h1>
+                <h1 className=" font-semibold text-lg">School Portal</h1>
                 {/* <h1 className="text-lg font-semibold">School OS</h1> */}
               </div>
             </div>

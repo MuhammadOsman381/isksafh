@@ -36,7 +36,7 @@ export function LoginScreen({
             Premium Next.js rebuild
           </div>
           <h1 className="mt-6 max-w-2xl text-5xl font-semibold tracking-tight md:text-7xl">
-            ISKSAFH Student Management System
+            Student Management System
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-zinc-600">
             A clean school operations dashboard for administrators, teachers,

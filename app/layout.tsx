@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ISKS AFH Student Management System",
+  title: "tudent Management System",
   description: "Premium Next.js school management dashboard backed by Supabase.",
 };
 
